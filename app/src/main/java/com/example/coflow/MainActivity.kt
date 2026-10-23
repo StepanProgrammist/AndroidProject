@@ -12,10 +12,11 @@ import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
 import com.example.coflow.ui.auth.AuthRoute
-import com.example.coflow.ui.tasks.ChoseAssigneeScreen
-import com.example.coflow.ui.tasks.ChoseDateScreen
-import com.example.coflow.ui.tasks.ChoseProjectScreen
+import com.example.coflow.ui.tasks.ChooseAssigneeScreen
+import com.example.coflow.ui.tasks.ChooseDateScreen
+import com.example.coflow.ui.tasks.ChooseProjectScreen
 import com.example.coflow.ui.tasks.CreateTaskScreen
+import com.example.coflow.ui.tasks.TaskDetailScreen
 import com.example.coflow.ui.tasks.TasksScreen
 import com.example.coflow.ui.theme.CoFlowTheme
 
@@ -25,6 +26,8 @@ object Screen {
     const val CHOOSE_ASSIGNEE = "choose_assignee"
     const val CHOOSE_PROJECT = "choose_project"
     const val CHOOSE_DATE = "choose_date"
+
+    const val TASK_DETAIL = "task_detail/{taskId}"
 }
 
 class MainActivity : ComponentActivity() {
@@ -42,8 +45,33 @@ class MainActivity : ComponentActivity() {
                     NavHost(navController = navController, startDestination = Screen.TASKS) {
                         composable(Screen.TASKS) {
                             TasksScreen(
-                                onNavigateToCreateTask = { navController.navigate(Screen.CREATE_TASK) }
+                                onNavigateToCreateTask = { navController.navigate(Screen.CREATE_TASK) },
+                                onNavigateToTaskDetail = { taskId -> navController.navigate("task_detail/$taskId") }
                             )
+                        }
+
+                        // Экран просмотра задачи
+                        composable(
+                            route = Screen.TASK_DETAIL,
+                            arguments = listOf(androidx.navigation.navArgument("taskId") { type = androidx.navigation.NavType.IntType })
+                        ) { backStackEntry ->
+                            val taskId = backStackEntry.arguments?.getInt("taskId")
+                            // Ищем задачу в тестовых данных по ID
+                            val task = com.example.coflow.data.TasksTestData.tasks.find { it.id == taskId }
+
+                            if (task != null) {
+                                TaskDetailScreen(
+                                    task = task,
+                                    onBackClick = { navController.popBackStack() },
+                                    onEditClick = {
+                                        android.widget.Toast.makeText(
+                                            this@MainActivity,
+                                            "Редактирование ляляля",
+                                            android.widget.Toast.LENGTH_SHORT
+                                        ).show()
+                                    }
+                                )
+                            }
                         }
 
                         composable(Screen.CREATE_TASK) {
@@ -61,7 +89,7 @@ class MainActivity : ComponentActivity() {
 
                         // Экран выбора исполнителей
                         composable(Screen.CHOOSE_ASSIGNEE) {
-                            ChoseAssigneeScreen(
+                            ChooseAssigneeScreen(
                                 onBackClick = { navController.popBackStack() },
                                 onConfirmSelection = {
                                     // TODO: Здесь нужно получить выбранные данные и передать их обратно (например, через ViewModel)
@@ -73,7 +101,7 @@ class MainActivity : ComponentActivity() {
 
                         // Экран выбора проекта
                         composable(Screen.CHOOSE_PROJECT) {
-                            ChoseProjectScreen(
+                            ChooseProjectScreen(
                                 onBackClick = { navController.popBackStack() },
                                 onConfirmSelection = {
                                     // TODO: Обработать выбор проекта
@@ -84,7 +112,7 @@ class MainActivity : ComponentActivity() {
 
                         // Экран выбора даты
                         composable(Screen.CHOOSE_DATE) {
-                            ChoseDateScreen(
+                            ChooseDateScreen(
                                 onBackClick = { navController.popBackStack() },
                                 onConfirmSelection = {
                                     // TODO: Обработать выбор даты

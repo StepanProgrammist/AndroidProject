@@ -18,21 +18,28 @@ import com.example.coflow.ui.theme.CoFlowColors
 import com.example.coflow.ui.theme.CoFlowGlassStyles
 import com.example.coflow.ui.theme.CoFlowShapes
 
-// 1. Универсальная стеклянная карточка (для списков, групп задач)
 @Composable
 fun CoFlowGlassCard(
     modifier: Modifier = Modifier,
     shape: RoundedCornerShape = CoFlowGlassStyles.CardShape,
+    isSelected: Boolean = false, // <-- НОВЫЙ ПАРАМЕТР
     onClick: (() -> Unit)? = null,
     content: @Composable ColumnScope.() -> Unit
 ) {
     val clickModifier = if (onClick != null) Modifier.clickable(onClick = onClick) else Modifier
 
+    // Вычисляем цвет фона в зависимости от состояния
+    val backgroundColor = if (isSelected) {
+        CoFlowColors.Blue.copy(alpha = 0.12f) // Голубой фон при выборе
+    } else {
+        CoFlowGlassStyles.Surface // Дефолтный полупрозрачный белый фон
+    }
+
     Column(
         modifier = modifier
             .shadow(elevation = 2.dp, shape = shape, ambientColor = CoFlowGlassStyles.Shadow, spotColor = CoFlowGlassStyles.Shadow)
             .clip(shape)
-            .background(CoFlowGlassStyles.Surface)
+            .background(backgroundColor) // <-- ПРИМЕНЯЕМ ВЫЧИСЛЕННЫЙ ФОН
             .border(1.dp, CoFlowGlassStyles.BlueBorder, shape)
             .padding(horizontal = 12.dp, vertical = 9.dp)
             .then(clickModifier)
@@ -41,7 +48,6 @@ fun CoFlowGlassCard(
     }
 }
 
-// 2. Карточка авторизации (специфичный полупрозрачный фон)
 @Composable
 fun CoFlowAuthCard(
     modifier: Modifier = Modifier,

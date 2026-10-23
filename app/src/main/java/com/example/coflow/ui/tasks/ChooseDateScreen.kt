@@ -15,6 +15,7 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.shadow
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalFocusManager
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
@@ -26,9 +27,10 @@ import java.time.LocalDate
 import java.time.YearMonth
 import java.time.format.DateTimeFormatter
 import java.util.Locale
+import com.example.coflow.R
 
 @Composable
-fun ChoseDateScreen(onBackClick: () -> Unit, onConfirmSelection: (String) -> Unit) {
+fun ChooseDateScreen(onBackClick: () -> Unit, onConfirmSelection: (String) -> Unit) {
     var currentMonth by rememberSaveable { mutableStateOf(YearMonth.of(2027, 1)) }
     var selectedDate by rememberSaveable { mutableStateOf(LocalDate.of(2027, 1, 7)) }
     val focusManager = LocalFocusManager.current
@@ -36,10 +38,10 @@ fun ChoseDateScreen(onBackClick: () -> Unit, onConfirmSelection: (String) -> Uni
     BackHandler(onBack = onBackClick)
 
     Box(modifier = Modifier.fillMaxSize().background(coFlowTasksBackgroundBrush())) {
-        Column(modifier = Modifier.fillMaxSize().safeDrawingPadding().padding(horizontal = CoFlowSpacing.ScreenHorizontal)) {
+        Column(modifier = Modifier.fillMaxSize().navigationBarsPadding().imePadding().padding(horizontal = CoFlowSpacing.ScreenHorizontal)) {
 
             CoFlowScreenHeader(
-                title = "Дата окончания",
+                title = stringResource(R.string.choose_date_header),
                 onBackClick = { focusManager.clearFocus(); onBackClick() }
             )
 
@@ -82,11 +84,12 @@ fun ChoseDateScreen(onBackClick: () -> Unit, onConfirmSelection: (String) -> Uni
             Spacer(Modifier.weight(1f))
 
             CoFlowPrimaryButton(
-                text = "Готово",
+                text = stringResource(R.string.done_button),
                 onClick = {
                     focusManager.clearFocus()
                     onConfirmSelection(selectedDate.format(DateTimeFormatter.ofPattern("dd.MM.yyyy")))
-                }
+                },
+                modifier = Modifier.padding(top = 8.dp, bottom = 16.dp)
             )
         }
     }
@@ -136,6 +139,6 @@ private fun CalendarGrid(currentMonth: YearMonth, selectedDate: LocalDate, onDat
 
 @Preview(name = "Дата окончания", showBackground = true, widthDp = 390, heightDp = 844)
 @Composable
-private fun ChoseDateScreenPreview() {
-    CoFlowTheme { ChoseDateScreen(onBackClick = {}, onConfirmSelection = {}) }
+private fun ChooseDateScreenPreview() {
+    CoFlowTheme { ChooseDateScreen(onBackClick = {}, onConfirmSelection = {}) }
 }

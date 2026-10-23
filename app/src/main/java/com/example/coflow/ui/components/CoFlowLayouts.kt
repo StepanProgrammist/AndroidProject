@@ -19,26 +19,59 @@ import com.example.coflow.ui.theme.CoFlowColors
 import com.example.coflow.ui.theme.CoFlowGlassStyles
 import androidx.compose.ui.draw.shadow
 
-// 1. Стандартный заголовок экрана с кнопкой "Назад"
 @Composable
 fun CoFlowScreenHeader(
     title: String,
-    onBackClick: () -> Unit,
-    modifier: Modifier = Modifier
+    modifier: Modifier = Modifier,
+    subtitle: String? = null,
+    onBackClick: (() -> Unit)? = null, // <-- Теперь необязательный параметр
+    trailingContent: @Composable (() -> Unit)? = null // <-- Слот для правой части (например, колокольчик)
 ) {
-    Row(modifier = modifier.fillMaxWidth().padding(top = 10.dp, bottom = 22.dp), verticalAlignment = Alignment.CenterVertically) {
-        Box(
-            modifier = Modifier.size(48.dp).clip(CircleShape).clickable { onBackClick() },
-            contentAlignment = Alignment.Center
-        ) {
-            CoFlowIcon(name = "back", modifier = Modifier.size(22.dp), color = CoFlowColors.TextSecondary, contentDescription = "Назад")
+    Row(
+        modifier = modifier.fillMaxWidth().padding(top = 60.dp, bottom = 22.dp),
+        verticalAlignment = Alignment.CenterVertically,
+        horizontalArrangement = Arrangement.SpaceBetween
+    ) {
+        Row(verticalAlignment = Alignment.CenterVertically) {
+            // Кнопка назад рисуется ТОЛЬКО если передан onBackClick
+            if (onBackClick != null) {
+                Box(
+                    modifier = Modifier
+                        .size(48.dp)
+                        .clip(CircleShape)
+                        .clickable { onBackClick() },
+                    contentAlignment = Alignment.Center
+                ) {
+                    CoFlowIcon(name = "back", modifier = Modifier.size(22.dp), color = CoFlowColors.TextSecondary, contentDescription = "Назад")
+                }
+                Spacer(Modifier.width(4.dp))
+            }
+
+            Column {
+                Text(
+                    text = title,
+                    fontSize = 26.sp,
+                    fontWeight = FontWeight.Bold,
+                    color = CoFlowColors.TextPrimary
+                )
+                if (subtitle != null) {
+                    Spacer(Modifier.height(3.dp))
+                    Text(
+                        text = subtitle,
+                        fontSize = 13.sp,
+                        color = CoFlowColors.TextSecondary
+                    )
+                }
+            }
         }
-        Spacer(Modifier.width(4.dp))
-        Text(text = title, fontSize = 22.sp, fontWeight = FontWeight.Bold, color = CoFlowColors.TextPrimary)
+
+        // Правая часть (колокольчик или что-то еще)
+        if (trailingContent != null) {
+            trailingContent()
+        }
     }
 }
 
-// 2. Элемент нижней навигации (внутренний компонент для BottomNavigationBar)
 data class NavItem(val icon: String, val title: String, val selected: Boolean, val onClick: () -> Unit)
 
 @Composable

@@ -24,17 +24,21 @@ import com.example.coflow.ui.components.*
 import com.example.coflow.ui.theme.*
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.foundation.clickable
+import androidx.compose.ui.res.stringResource
+import com.example.coflow.R
 
 data class Assignee(val id: String, val name: String, val email: String, val initials: String, val avatarColor: Color)
 
 @Composable
-fun ChoseAssigneeScreen(onBackClick: () -> Unit, onConfirmSelection: (List<Assignee>) -> Unit) {
+fun ChooseAssigneeScreen(onBackClick: () -> Unit, onConfirmSelection: (List<Assignee>) -> Unit) {
     var searchQuery by rememberSaveable { mutableStateOf("") }
     val allAssignees = remember {
         listOf(
             Assignee("1", "Анна Смирнова", "anna.s@example.com", "АС", Color(0xFF6B9AF3)),
             Assignee("2", "Михаил Орлов", "m.orlov@example.com", "МО", Color(0xFFA3B8CC)),
-            Assignee("3", "Елена Волкова", "elena.v@example.com", "ЕВ", Color(0xFF86D3B5))
+            Assignee("3", "Елена Волкова", "elena.v@example.com", "ЕВ", Color(0xFF86D3B5)),
+            Assignee("4", "Дмитрий Соколов", "d.sokolov@example.com", "ДС", Color(0xFF8BB8F8)),
+            Assignee("5", "Мария Козлова", "maria.k@example.com", "МК", Color(0xFFAFA3F8))
         )
     }
     var selectedIds by remember { mutableStateOf(setOf("1")) }
@@ -55,17 +59,16 @@ fun ChoseAssigneeScreen(onBackClick: () -> Unit, onConfirmSelection: (List<Assig
     BackHandler(onBack = onBackClick)
 
     Box(modifier = Modifier.fillMaxSize().background(coFlowTasksBackgroundBrush())) {
-        Column(modifier = Modifier.fillMaxSize().safeDrawingPadding().imePadding().padding(horizontal = CoFlowSpacing.ScreenHorizontal)) {
-
+        Column(modifier = Modifier.fillMaxSize().navigationBarsPadding().imePadding().padding(horizontal = CoFlowSpacing.ScreenHorizontal)) {
             CoFlowScreenHeader(
-                title = "Добавить исполнителя",
+                title = stringResource(R.string.choose_assignee_header),
                 onBackClick = { focusManager.clearFocus(); onBackClick() }
             )
 
             CoFlowGlassTextField(
                 value = searchQuery,
                 onValueChange = { searchQuery = it },
-                placeholder = "Имя или почта",
+                placeholder = stringResource(R.string.create_task_choose_assignee_placeholder),
                 leadingIcon = "search",
                 keyboardOptions = androidx.compose.foundation.text.KeyboardOptions(imeAction = ImeAction.Search),
                 keyboardActions = androidx.compose.foundation.text.KeyboardActions(onSearch = { focusManager.clearFocus() })
@@ -74,14 +77,17 @@ fun ChoseAssigneeScreen(onBackClick: () -> Unit, onConfirmSelection: (List<Assig
             Spacer(Modifier.height(20.dp))
 
             Row(modifier = Modifier.fillMaxWidth().padding(horizontal = 4.dp, vertical = 8.dp), horizontalArrangement = Arrangement.SpaceBetween) {
-                Text(text = "Исполнители", fontSize = 12.sp, fontWeight = FontWeight.SemiBold, color = CoFlowColors.TextPrimary)
+                Text(text = stringResource(R.string.create_task_assignee), fontSize = 12.sp, fontWeight = FontWeight.SemiBold, color = CoFlowColors.TextPrimary)
                 Text(text = "${allAssignees.size}", fontSize = 12.sp, fontWeight = FontWeight.SemiBold, color = CoFlowColors.TextSecondary)
             }
 
             LazyColumn(modifier = Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(10.dp), contentPadding = PaddingValues(bottom = 16.dp)) {
                 items(filteredAssignees, key = { it.id }) { assignee ->
                     val isSelected = selectedIds.contains(assignee.id)
+
+                    // ИСПРАВЛЕНО: передаем isSelected в карточку
                     CoFlowGlassCard(
+                        isSelected = isSelected,
                         modifier = Modifier.clickable {
                             selectedIds = if (isSelected) selectedIds - assignee.id else selectedIds + assignee.id
                         }
@@ -109,14 +115,14 @@ fun ChoseAssigneeScreen(onBackClick: () -> Unit, onConfirmSelection: (List<Assig
                 }
             }
 
-            Column(modifier = Modifier.fillMaxWidth().padding(top = 8.dp, bottom = 12.dp)) {
+            Column(modifier = Modifier.fillMaxWidth().padding(top = 8.dp, bottom = 16.dp)) {
                 Text(
                     text = getSelectedText(selectedIds.size),
                     modifier = Modifier.padding(bottom = 12.dp, start = 4.dp),
                     fontSize = 12.sp, fontWeight = FontWeight.Medium, color = CoFlowColors.TextPrimary
                 )
                 CoFlowPrimaryButton(
-                    text = "Добавить исполнителей",
+                    text = stringResource(R.string.add_assignee_button),
                     onClick = {
                         focusManager.clearFocus()
                         onConfirmSelection(allAssignees.filter { selectedIds.contains(it.id) })
@@ -130,6 +136,6 @@ fun ChoseAssigneeScreen(onBackClick: () -> Unit, onConfirmSelection: (List<Assig
 
 @Preview(name = "Выбор исполнителя", showBackground = true, widthDp = 390, heightDp = 844)
 @Composable
-private fun ChoseAssigneeScreenPreview() {
-    CoFlowTheme { ChoseAssigneeScreen(onBackClick = {}, onConfirmSelection = {}) }
+private fun ChooseAssigneeScreenPreview() {
+    CoFlowTheme { ChooseAssigneeScreen(onBackClick = {}, onConfirmSelection = {}) }
 }

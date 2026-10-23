@@ -4,6 +4,14 @@
         <string name="auth_welcome_title">Welcome\nto CoFlow</string>
         <string name="auth_subtitle_login">Log in</string>
         <string name="auth_subtitle_register">Sign up</string>
+        <string name="my_tasks_header">My tasks</string>
+        <string name="my_tasks_active">active</string>
+        <string name="my_tasks_completed">completed</string>
+        <string name="create_task_header">Task creation</string>
+        <string name="choose_project_header">Choose project</string>
+        <string name="choose_date_header">Deadline</string>
+        <string name="choose_assignee_header">Add assignee</string>
+
 
         <!-- Поля ввода -->
         <string name="auth_label_username">Username</string>
@@ -18,6 +26,25 @@
         <string name="auth_label_confirm_password">Confirm password</string>
         <string name="auth_placeholder_confirm_password">Enter password again</string>
 
+        <string name="creation_task_name_label">Name</string>
+        <string name="creation_task_name_placeholder">Enter task name</string>
+
+        <string name="creation_task_description_label">Description</string>
+        <string name="creation_task_description_placeholder">Enter task description</string>
+
+        <string name="creation_task_assignee_label">Assignee</string>
+        <string name="creation_task_assignee_placeholder">Choose assignee</string>
+
+        <string name="creation_task_project_label">Project</string>
+        <string name="creation_task_project_placeholder">Choose project</string>
+
+        <string name="creation_task_deadline_label">Deadline</string>
+        <string name="creation_task_deadline_placeholder">Choose date</string>
+
+        <string name="create_task_choose_project_name">Name of project</string>
+
+        <string name="create_task_choose_assignee_placeholder">Name or email</string>
+
         <!-- Кнопки -->
         <string name="auth_button_login">Log in</string>
         <string name="auth_button_register">Sign up</string>
@@ -25,9 +52,44 @@
         <string name="auth_toggle_to_register">Don\'t have an account? Sign up</string>
         <string name="auth_toggle_to_login">Already have an account? Log in</string>
 
+        <string name="create_task_button">Create task</string>
+
+        <string name="done_button">Done</string>
+
+        <string name="add_assignee_button">Add assignees</string>
+
         <!-- Ошибки -->
         <string name="auth_error_invalid_contact">Check email or phone format</string>
         <string name="auth_error_short_password">Minimum 8 characters</string>
         <string name="auth_error_not_equal_password">The passwords do not match.</string>
+        <string name="task_outdated">Expired</string>
+
+        <!-- Группы -->
+        <string name="tasks_group_planned">For execution</string>
+        <string name="tasks_group_active">In process</string>
+        <string name="tasks_group_completed">Completed</string>
+
+        <string name="tasks_group_today">Today</string>
+        <string name="tasks_group_this_week">This week</string>
+        <string name="tasks_group_next_week">Next week</string>
+
+        <string name="create_task_projects">Projects</string>
+
+        <string name="create_task_assignee">Assignees</string>
+
+        <!-- Группировка -->
+        <string name="grouping_header">Grouping</string>
+        <string name="grouping_status">According to status</string>
+        <string name="grouping_deadline">By the deadline</string>
+
+        <!-- Фильтры -->
+        <string name="filter_header">Filter</string>
+        <string name="filter_none">No filter</string>
+        <string name="filter_mine">Mine</string>
+
+        <!-- Навигация -->
+        <string name="navigation_tasks">My tasks</string>
+        <string name="navigation_projects">Projects</string>
+        <string name="navigation_profile">Profile</string>
 
 </resources>
