@@ -27,7 +27,7 @@ class FirebaseTaskRepositoryImplTest {
         val testProjectId = "test_project_${System.currentTimeMillis()}"
         val projectRef = db.collection("Project").document(testProjectId)
 
-        val newTask = Task(
+        val newTaskSchema = TaskSchema(
             projectRef = projectRef,
             title = "Тестовая задача Firestore",
             description = "Описание задачи для интеграционного теста",
@@ -39,7 +39,7 @@ class FirebaseTaskRepositoryImplTest {
 
         try {
             // 1. Тестируем добавление задачи
-            val addedTask = repository.addTask(newTask)
+            val addedTask = repository.addTask(newTaskSchema)
             createdTaskId = addedTask.id
             assertTrue("ID созданной задачи должен быть заполнен", createdTaskId.isNotBlank())
             assertEquals("Тестовая задача Firestore", addedTask.title)
