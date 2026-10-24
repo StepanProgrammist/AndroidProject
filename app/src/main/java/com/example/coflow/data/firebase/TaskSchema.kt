@@ -31,13 +31,7 @@ data class TaskSchema(
             "status" to status.value
         )
     }
-    private fun safeGetRef(doc: DocumentSnapshot, field: String): DocumentReference? {
-        return try {
-            doc.getDocumentReference(field)
-        } catch (e: Exception) {
-            null // Если в базе лежит строка вместо ссылки, просто вернем null, а не краш
-        }
-    }
+
     companion object {
         private fun safeGetRef(doc: DocumentSnapshot, field: String): DocumentReference? {
             return try {
