@@ -3,7 +3,7 @@ package com.example.coflow.ui.tasks
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.example.coflow.data.firebase.FirebaseTaskRepositoryImpl
-import com.example.coflow.data.firebase.Task
+import com.example.coflow.models.TaskModel
 import com.example.coflow.data.firebase.TaskRepository
 import com.google.firebase.auth.FirebaseAuth
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -13,7 +13,7 @@ import kotlinx.coroutines.launch
 
 sealed class TasksUiState {
     object Loading : TasksUiState()
-    data class Success(val tasks: List<Task>) : TasksUiState()
+    data class Success(val tasks: List<TaskModel>) : TasksUiState()
     data class Error(val message: String) : TasksUiState()
 }
 

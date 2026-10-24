@@ -20,31 +20,28 @@ fun UserModel.toSchema() : UserSchema{
     )
 }
 
-fun TaskSchema.toDomain(): TaskModel{
+fun TaskSchema.toDomain(): TaskModel {
     return TaskModel(
         id = this.id,
         title = this.title,
         description = this.description,
-        projectId = this.projectRef?.id ?: "",
-        authorId = this.authorRef?.id ?: "",
-        assigneeIds = this.executorRef?.id ?: "",
+        projectRef = this.projectRef,    // ← Просто копируем ссылку напрямую
+        authorRef = this.authorRef,      // ← Просто копируем ссылку напрямую
+        executorRef = this.executorRef,  // ← Просто копируем ссылку напрямую
         deadline = this.deadline,
-        //status = this.status
+        status = this.status
     )
 }
 
 fun TaskModel.toSchema(db: FirebaseFirestore): TaskSchema {
     return TaskSchema(
-        id = id,
-        projectRef = projectId.takeIf { it.isNotBlank() }
-            ?.let { db.collection("Project").document(it) },
-        authorRef = authorId.takeIf { it.isNotBlank() }
-            ?.let { db.collection("users").document(it) },
-        executorRef = assigneeIds.takeIf { it.isNotBlank() }
-            ?.let { db.collection("users").document(it) },
-        title = title,
-        description = description,
-        deadline = deadline,
-        //status = status
+        id = this.id,
+        projectRef = this.projectRef,    // ← Просто копируем ссылку напрямую
+        authorRef = this.authorRef,      // ← Просто копируем ссылку напрямую
+        executorRef = this.executorRef,  // ← Просто копируем ссылку напрямую
+        title = this.title,
+        description = this.description,
+        deadline = this.deadline,
+        status = this.status
     )
 }

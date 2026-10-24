@@ -59,6 +59,7 @@ class MainActivity : ComponentActivity() {
                         }
 
                         // Экран просмотра задачи (Загрузка из Firebase через ViewModel)
+                        // Экран просмотра задачи (Загрузка из Firebase через ViewModel)
                         composable(
                             route = Screen.TASK_DETAIL,
                             arguments = listOf(androidx.navigation.navArgument("taskId") { type = androidx.navigation.NavType.StringType })
@@ -75,7 +76,7 @@ class MainActivity : ComponentActivity() {
                                 }
                             )
 
-                            // Наблюдаем за задачей
+                            // 🔥 ВАЖНО: Здесь ОБЯЗАТЕЛЬНО должно быть .collectAsState()
                             val task by viewModel.task.collectAsState()
 
                             if (task != null) {

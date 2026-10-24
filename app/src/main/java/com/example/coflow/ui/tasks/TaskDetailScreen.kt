@@ -20,7 +20,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 //import com.example.coflow.data.Task
 //import com.example.coflow.models.TaskStatus
-import com.example.coflow.data.firebase.Task
+import com.example.coflow.models.TaskModel
 import com.example.coflow.data.firebase.TaskStatus
 import java.time.LocalDate
 import com.example.coflow.ui.components.*
@@ -29,7 +29,7 @@ import java.time.format.DateTimeFormatter
 
 @Composable
 fun TaskDetailScreen(
-    task: Task,
+    task: TaskModel, // <-- ИЗМЕНЕНО С Task НА TaskModel
     onBackClick: () -> Unit,
     onEditClick: () -> Unit
 ) {

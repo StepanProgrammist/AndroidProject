@@ -3,8 +3,8 @@ package com.example.coflow.ui.tasks
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.example.coflow.data.firebase.FirebaseTaskRepositoryImpl
-import com.example.coflow.data.firebase.Task
 import com.example.coflow.data.firebase.TaskRepository
+import com.example.coflow.models.TaskModel
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -15,8 +15,9 @@ class TaskDetailViewModel(
     private val repository: TaskRepository = FirebaseTaskRepositoryImpl()
 ) : ViewModel() {
 
-    private val _task = MutableStateFlow<Task?>(null)
-    val task: StateFlow<Task?> = _task.asStateFlow()
+    // Тип четко указан: TaskModel?
+    private val _task = MutableStateFlow<TaskModel?>(null)
+    val task: StateFlow<TaskModel?> = _task.asStateFlow()
 
     init {
         loadTask()
@@ -24,7 +25,15 @@ class TaskDetailViewModel(
 
     private fun loadTask() {
         viewModelScope.launch {
-            _task.value = repository.getById(taskId)
+            val result = repository.getById(taskId)
+
+            // Распаковываем Result: если успех, кладем задачу, если ошибка - оставляем null
+            result.onSuccess { taskModel ->
+                _task.value = taskModel
+            }.onFailure { exception ->
+                exception.printStackTrace()
+                _task.value = null
+            }
         }
     }
 }

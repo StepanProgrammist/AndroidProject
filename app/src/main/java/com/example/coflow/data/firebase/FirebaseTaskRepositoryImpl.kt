@@ -10,9 +10,11 @@ class FirebaseTaskRepositoryImpl(
     private val db: FirebaseFirestore = FirebaseFirestore.getInstance()
 ) : TaskRepository {
 
-    override suspend fun getAll(): List<Task> {
+    override suspend fun getAll(): List<TaskModel> {
         val querySnapshot = taskCollection.get().await()
-        return querySnapshot.documents.mapNotNull { Task.fromDocument(it) }
+        return querySnapshot.documents.mapNotNull { doc ->
+            TaskSchema.fromDocument(doc)?.toDomain()
+        }
     }
 
     private val taskCollection: CollectionReference = db.collection("Task")
@@ -55,7 +57,10 @@ class FirebaseTaskRepositoryImpl(
     }
 
 
-    override suspend fun deleteTask(id: String) {
+    override suspend fun deleteTask(id: String): Result<Unit> = try {
         taskCollection.document(id).delete().await()
+        Result.success(Unit)
+    } catch (e: Exception) {
+        Result.failure(Exception(e.message ?: "Ошибка удаления задачи"))
     }
 }

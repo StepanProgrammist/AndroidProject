@@ -31,8 +31,21 @@ data class TaskSchema(
             "status" to status.value
         )
     }
-
+    private fun safeGetRef(doc: DocumentSnapshot, field: String): DocumentReference? {
+        return try {
+            doc.getDocumentReference(field)
+        } catch (e: Exception) {
+            null // Если в базе лежит строка вместо ссылки, просто вернем null, а не краш
+        }
+    }
     companion object {
+        private fun safeGetRef(doc: DocumentSnapshot, field: String): DocumentReference? {
+            return try {
+                doc.getDocumentReference(field)
+            } catch (e: Exception) {
+                null // Если в базе лежит строка вместо ссылки, просто вернем null, а не краш
+            }
+        }
         fun fromDocument(doc: DocumentSnapshot): TaskSchema? {
             if (!doc.exists()) return null
 
@@ -48,16 +61,18 @@ data class TaskSchema(
 
             val statusInt = (doc.getLong("status") ?: 0L).toInt()
 
-            return TaskSchema(
+            return TaskSchema( // или Task(
                 id = doc.id,
-                projectRef = doc.getDocumentReference("projectRef"),
-                authorRef = doc.getDocumentReference("authorRef"),
-                executorRef = doc.getDocumentReference("executorRef"),
+                projectRef = safeGetRef(doc, "projectRef"), // <-- ИСПРАВЛЕНО
+                authorRef = safeGetRef(doc, "authorRef"),   // <-- ИСПРАВЛЕНО
+                executorRef = safeGetRef(doc, "executorRef"), // <-- ИСПРАВЛЕНО
                 title = doc.getString("title") ?: "",
                 description = doc.getString("description") ?: "",
                 deadline = deadlineLocal,
                 status = TaskStatus.fromValue(statusInt)
             )
+
         }
     }
+
 }

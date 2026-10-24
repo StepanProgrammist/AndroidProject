@@ -29,7 +29,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 //import com.example.coflow.data.Task
 //import com.example.coflow.models.TaskStatus
-import com.example.coflow.data.firebase.Task
+import com.example.coflow.models.TaskModel
 import com.example.coflow.data.firebase.TaskStatus
 import com.google.firebase.auth.FirebaseAuth
 import java.time.LocalDateTime
@@ -42,7 +42,7 @@ import java.time.format.DateTimeFormatter
 import com.example.coflow.R
 
 private enum class TaskGrouping { STATUS, DEADLINE }
-private data class TaskGroup(val id: String, val title: String, val tasks: List<Task>)
+private data class TaskGroup(val id: String, val title: String, val tasks: List<TaskModel>)
 
 @Composable
 fun TasksScreen(
@@ -261,7 +261,7 @@ fun TasksScreen(
 }
 
 @Composable
-private fun TaskGroupCard(group: TaskGroup, expanded: Boolean, onToggle: () -> Unit, onTaskClick: (Task) -> Unit) {
+private fun TaskGroupCard(group: TaskGroup, expanded: Boolean, onToggle: () -> Unit, onTaskClick: (TaskModel) -> Unit) {
     CoFlowGlassCard(modifier = Modifier.fillMaxWidth().clickable(onClick = onToggle)) {
         Row(modifier = Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
             Text(text = group.title, fontSize = 13.sp, fontWeight = FontWeight.SemiBold, color = CoFlowColors.TextPrimary)
@@ -291,7 +291,7 @@ private fun TaskGroupCard(group: TaskGroup, expanded: Boolean, onToggle: () -> U
 }
 
 @Composable
-private fun TaskRow(task: Task, onClick: () -> Unit) {
+private fun TaskRow(task: TaskModel, onClick: () -> Unit) {
     val formatter = remember { DateTimeFormatter.ofPattern("dd.MM.yy") }
     val today = LocalDate.now()
     val taskDate = task.deadline.toLocalDate()
@@ -344,7 +344,7 @@ private fun TaskRow(task: Task, onClick: () -> Unit) {
 // --- Внутренние компоненты для панели фильтров ---
 @Composable
 private fun SortFilterPanel(
-    tasks: List<Task>, // <-- ДОБАВЛЕНО: теперь функция видит список задач
+    tasks: List<TaskModel>, // <-- ДОБАВЛЕНО: теперь функция видит список задач
     modifier: Modifier = Modifier,
     grouping: TaskGrouping,
     onGroupingChange: (TaskGrouping) -> Unit,
