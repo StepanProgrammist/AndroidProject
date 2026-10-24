@@ -15,7 +15,7 @@ import com.example.coflow.ui.auth.AuthRoute
 import com.example.coflow.ui.tasks.ChooseAssigneeScreen
 import com.example.coflow.ui.tasks.ChooseDateScreen
 import com.example.coflow.ui.tasks.ChooseProjectScreen
-import com.example.coflow.ui.tasks.CreateTaskScreen
+import com.example.coflow.ui.tasks.CreateTaskRoute
 import com.example.coflow.ui.tasks.TaskDetailScreen
 import com.example.coflow.ui.tasks.TasksScreen
 import com.example.coflow.ui.theme.CoFlowTheme
@@ -75,10 +75,10 @@ class MainActivity : ComponentActivity() {
                         }
 
                         composable(Screen.CREATE_TASK) {
-                            CreateTaskScreen(
+                            CreateTaskRoute(
                                 onBackClick = { navController.popBackStack() },
-                                onCreateTask = { formData ->
-                                    // TODO: Сохранение задачи через ViewModel
+                                onTaskCreated = { formData ->
+                                    // TODO: Сохранение задачи через TasksRepository
                                     navController.popBackStack()
                                 },
                                 onNavigateToAssignees = { navController.navigate(Screen.CHOOSE_ASSIGNEE) },
