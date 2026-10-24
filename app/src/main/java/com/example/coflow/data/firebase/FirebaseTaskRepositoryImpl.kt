@@ -9,6 +9,11 @@ class FirebaseTaskRepositoryImpl(
     private val db: FirebaseFirestore = FirebaseFirestore.getInstance()
 ) : TaskRepository {
 
+    override suspend fun getAll(): List<Task> {
+        val querySnapshot = taskCollection.get().await()
+        return querySnapshot.documents.mapNotNull { Task.fromDocument(it) }
+    }
+
     private val taskCollection: CollectionReference = db.collection("Task")
 
     override suspend fun getById(id: String): Task? {
