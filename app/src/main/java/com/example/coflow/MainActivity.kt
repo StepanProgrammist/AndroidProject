@@ -4,10 +4,17 @@ import android.os.Bundle
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
+import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.material3.CircularProgressIndicator
+import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
+import androidx.compose.ui.Alignment
+import androidx.compose.ui.Modifier
+import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
@@ -20,13 +27,6 @@ import com.example.coflow.ui.tasks.TaskDetailScreen
 import com.example.coflow.ui.tasks.TaskDetailViewModel
 import com.example.coflow.ui.tasks.TasksScreen
 import com.example.coflow.ui.theme.CoFlowTheme
-import androidx.lifecycle.viewmodel.compose.viewModel
-import androidx.compose.runtime.collectAsState
-import androidx.compose.ui.Modifier
-import androidx.compose.foundation.layout.Box
-import androidx.compose.foundation.layout.fillMaxSize
-import androidx.compose.ui.Alignment
-import androidx.compose.material3.CircularProgressIndicator
 
 object Screen {
     const val TASKS = "tasks"
@@ -54,7 +54,7 @@ class MainActivity : ComponentActivity() {
                         composable(Screen.TASKS) {
                             TasksScreen(
                                 onNavigateToCreateTask = { navController.navigate(Screen.CREATE_TASK) },
-                                onNavigateToTaskDetail = { taskId -> navController.navigate("task_detail/$taskId") }
+                                onNavigateToTaskDetail = { taskId -> navController.navigate("task_detail/$taskId") },
                             )
                         }
 
@@ -62,19 +62,20 @@ class MainActivity : ComponentActivity() {
                         // Экран просмотра задачи (Загрузка из Firebase через ViewModel)
                         composable(
                             route = Screen.TASK_DETAIL,
-                            arguments = listOf(androidx.navigation.navArgument("taskId") { type = androidx.navigation.NavType.StringType })
+                            arguments = listOf(androidx.navigation.navArgument("taskId") { type = androidx.navigation.NavType.StringType }),
                         ) { backStackEntry ->
                             val taskId = backStackEntry.arguments?.getString("taskId") ?: return@composable
 
                             // Создаем ViewModel для конкретной задачи
-                            val viewModel: TaskDetailViewModel = viewModel(
-                                factory = object : androidx.lifecycle.ViewModelProvider.Factory {
-                                    @Suppress("UNCHECKED_CAST")
-                                    override fun <T : androidx.lifecycle.ViewModel> create(modelClass: Class<T>): T {
-                                        return TaskDetailViewModel(taskId) as T
-                                    }
-                                }
-                            )
+                            val viewModel: TaskDetailViewModel =
+                                viewModel(
+                                    factory =
+                                        object : androidx.lifecycle.ViewModelProvider.Factory {
+                                            @Suppress("UNCHECKED_CAST")
+                                            override fun <T : androidx.lifecycle.ViewModel> create(modelClass: Class<T>): T =
+                                                TaskDetailViewModel(taskId) as T
+                                        },
+                                )
 
                             // 🔥 ВАЖНО: Здесь ОБЯЗАТЕЛЬНО должно быть .collectAsState()
                             val task by viewModel.task.collectAsState()
@@ -84,12 +85,13 @@ class MainActivity : ComponentActivity() {
                                     task = task!!,
                                     onBackClick = { navController.popBackStack() },
                                     onEditClick = {
-                                        android.widget.Toast.makeText(
-                                            this@MainActivity,
-                                            "Редактирование (в разработке)",
-                                            android.widget.Toast.LENGTH_SHORT
-                                        ).show()
-                                    }
+                                        android.widget.Toast
+                                            .makeText(
+                                                this@MainActivity,
+                                                "Редактирование (в разработке)",
+                                                android.widget.Toast.LENGTH_SHORT,
+                                            ).show()
+                                    },
                                 )
                             } else {
                                 // Показываем крутилку загрузки, пока задача летит из Firestore
@@ -108,7 +110,7 @@ class MainActivity : ComponentActivity() {
                                 },
                                 onNavigateToAssignees = { navController.navigate(Screen.CHOOSE_ASSIGNEE) },
                                 onNavigateToProject = { navController.navigate(Screen.CHOOSE_PROJECT) },
-                                onNavigateToDate = { navController.navigate(Screen.CHOOSE_DATE) }
+                                onNavigateToDate = { navController.navigate(Screen.CHOOSE_DATE) },
                             )
                         }
 
@@ -120,7 +122,7 @@ class MainActivity : ComponentActivity() {
                                     // TODO: Здесь нужно получить выбранные данные и передать их обратно (например, через ViewModel)
                                     // Пока просто возвращаемся назад
                                     navController.popBackStack()
-                                }
+                                },
                             )
                         }
 
@@ -131,7 +133,7 @@ class MainActivity : ComponentActivity() {
                                 onConfirmSelection = {
                                     // TODO: Обработать выбор проекта
                                     navController.popBackStack()
-                                }
+                                },
                             )
                         }
 
@@ -142,7 +144,7 @@ class MainActivity : ComponentActivity() {
                                 onConfirmSelection = {
                                     // TODO: Обработать выбор даты
                                     navController.popBackStack()
-                                }
+                                },
                             )
                         }
                     }

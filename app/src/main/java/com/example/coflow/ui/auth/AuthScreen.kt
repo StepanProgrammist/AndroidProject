@@ -8,6 +8,7 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -22,7 +23,6 @@ import androidx.lifecycle.viewmodel.compose.viewModel
 import com.example.coflow.R
 import com.example.coflow.ui.components.*
 import com.example.coflow.ui.theme.*
-import androidx.compose.runtime.LaunchedEffect
 
 @Composable
 fun AuthScreen(
@@ -36,15 +36,16 @@ fun AuthScreen(
 ) {
     Box(
         modifier = Modifier.fillMaxSize().background(coFlowBackgroundBrush()),
-        contentAlignment = Alignment.Center
+        contentAlignment = Alignment.Center,
     ) {
         Column(
-            modifier = Modifier
-                .fillMaxSize()
-                .verticalScroll(rememberScrollState())
-                .padding(horizontal = CoFlowSpacing.ScreenHorizontal, vertical = CoFlowSpacing.Medium),
+            modifier =
+                Modifier
+                    .fillMaxSize()
+                    .verticalScroll(rememberScrollState())
+                    .padding(horizontal = CoFlowSpacing.ScreenHorizontal, vertical = CoFlowSpacing.Medium),
             horizontalAlignment = Alignment.CenterHorizontally,
-            verticalArrangement = Arrangement.Center
+            verticalArrangement = Arrangement.Center,
         ) {
             CoFlowAuthCard(modifier = Modifier.fillMaxWidth()) {
                 Text(
@@ -53,17 +54,26 @@ fun AuthScreen(
                     style = MaterialTheme.typography.headlineMedium,
                     fontWeight = FontWeight.Bold,
                     color = CoFlowColors.TextPrimary,
-                    textAlign = TextAlign.Center
+                    textAlign = TextAlign.Center,
                 )
 
                 Spacer(modifier = Modifier.height(CoFlowSpacing.Small))
 
                 Text(
                     modifier = Modifier.fillMaxWidth(),
-                    text = stringResource(if (state.mode == AuthMode.LOGIN) R.string.auth_subtitle_login else R.string.auth_subtitle_register),
+                    text =
+                        stringResource(
+                            if (state.mode ==
+                                AuthMode.LOGIN
+                            ) {
+                                R.string.auth_subtitle_login
+                            } else {
+                                R.string.auth_subtitle_register
+                            },
+                        ),
                     style = MaterialTheme.typography.titleMedium,
                     color = CoFlowColors.TextPrimary,
-                    textAlign = TextAlign.Center
+                    textAlign = TextAlign.Center,
                 )
 
                 Spacer(modifier = Modifier.height(CoFlowSpacing.Medium))
@@ -75,7 +85,7 @@ fun AuthScreen(
                         label = stringResource(R.string.auth_label_username),
                         placeholder = stringResource(R.string.auth_placeholder_username),
                         isError = state.usernameError != null,
-                        supportingText = state.usernameError?.let { { Text(it) } }
+                        supportingText = state.usernameError?.let { { Text(it) } },
                     )
                     Spacer(modifier = Modifier.height(CoFlowSpacing.FieldGap))
                 }
@@ -86,7 +96,7 @@ fun AuthScreen(
                     label = stringResource(R.string.auth_label_contact),
                     placeholder = stringResource(R.string.auth_placeholder_contact),
                     isError = state.contactError != null,
-                    supportingText = state.contactError?.let { { Text(it) } }
+                    supportingText = state.contactError?.let { { Text(it) } },
                 )
 
                 Spacer(modifier = Modifier.height(CoFlowSpacing.FieldGap))
@@ -98,7 +108,7 @@ fun AuthScreen(
                     placeholder = stringResource(R.string.auth_placeholder_password),
                     visualTransformation = PasswordVisualTransformation(),
                     isError = state.passwordError != null,
-                    supportingText = state.passwordError?.let { { Text(it) } }
+                    supportingText = state.passwordError?.let { { Text(it) } },
                 )
 
                 if (state.mode == AuthMode.REGISTER) {
@@ -110,7 +120,7 @@ fun AuthScreen(
                         placeholder = stringResource(R.string.auth_placeholder_confirm_password),
                         visualTransformation = PasswordVisualTransformation(),
                         isError = state.confirmError != null,
-                        supportingText = state.confirmError?.let { { Text(stringResource(R.string.auth_error_not_equal_password)) } }
+                        supportingText = state.confirmError?.let { { Text(stringResource(R.string.auth_error_not_equal_password)) } },
                     )
                 }
 
@@ -120,7 +130,7 @@ fun AuthScreen(
                     text = stringResource(if (state.mode == AuthMode.LOGIN) R.string.auth_button_login else R.string.auth_button_register),
                     onClick = onSubmit,
                     enabled = !state.isSubmitting,
-                    height = 48.dp
+                    height = 48.dp,
                 )
 
                 Spacer(modifier = Modifier.height(CoFlowSpacing.Small))
@@ -128,10 +138,19 @@ fun AuthScreen(
                 TextButton(onClick = onToggleMode) {
                     Text(
                         modifier = Modifier.fillMaxWidth(),
-                        text = stringResource(if (state.mode == AuthMode.LOGIN) R.string.auth_toggle_to_register else R.string.auth_toggle_to_login),
+                        text =
+                            stringResource(
+                                if (state.mode ==
+                                    AuthMode.LOGIN
+                                ) {
+                                    R.string.auth_toggle_to_register
+                                } else {
+                                    R.string.auth_toggle_to_login
+                                },
+                            ),
                         color = CoFlowColors.TextPrimary,
                         style = MaterialTheme.typography.labelLarge,
-                        textAlign = TextAlign.Center
+                        textAlign = TextAlign.Center,
                     )
                 }
             }
@@ -140,9 +159,11 @@ fun AuthScreen(
 }
 
 @Composable
-fun AuthRoute(onAuthSuccess: () -> Unit, viewModel: AuthViewModel = viewModel()) {
+fun AuthRoute(
+    onAuthSuccess: () -> Unit,
+    viewModel: AuthViewModel = viewModel(),
+) {
     val state by viewModel.state.collectAsStateWithLifecycle()
-
 
     LaunchedEffect(state.isAuthorized) {
         if (state.isAuthorized) {
@@ -157,7 +178,7 @@ fun AuthRoute(onAuthSuccess: () -> Unit, viewModel: AuthViewModel = viewModel())
         onPasswordChange = viewModel::onPasswordChange,
         onConfirmChange = viewModel::onConfirmChange,
         onToggleMode = viewModel::onToggleMode,
-        onSubmit = { viewModel.onSubmit() }
+        onSubmit = { viewModel.onSubmit() },
     )
 }
 
@@ -177,7 +198,7 @@ private fun AuthLoginPreview() {
             onPasswordChange = {},
             onConfirmChange = {},
             onToggleMode = {},
-            onSubmit = {}
+            onSubmit = {},
         )
     }
 }
@@ -188,18 +209,19 @@ private fun AuthLoginPreview() {
 private fun AuthLoginErrorPreview() {
     CoFlowTheme {
         AuthScreen(
-            state = AuthUiState(
-                contact = "liza@mail",
-                password = "123",
-                contactError = "Проверьте формат почты",
-                passwordError = "Минимум 8 символов"
-            ),
+            state =
+                AuthUiState(
+                    contact = "liza@mail",
+                    password = "123",
+                    contactError = "Проверьте формат почты",
+                    passwordError = "Минимум 8 символов",
+                ),
             onUsernameChange = {},
             onContactChange = {},
             onPasswordChange = {},
             onConfirmChange = {},
             onToggleMode = {},
-            onSubmit = {}
+            onSubmit = {},
         )
     }
 }
@@ -210,16 +232,17 @@ private fun AuthLoginErrorPreview() {
 private fun AuthRegisterPreview() {
     CoFlowTheme {
         AuthScreen(
-            state = AuthUiState(
-                mode = AuthMode.REGISTER,
-                username = "Лиза"
-            ),
+            state =
+                AuthUiState(
+                    mode = AuthMode.REGISTER,
+                    username = "Лиза",
+                ),
             onUsernameChange = {},
             onContactChange = {},
             onPasswordChange = {},
             onConfirmChange = {},
             onToggleMode = {},
-            onSubmit = {}
+            onSubmit = {},
         )
     }
 }
@@ -230,20 +253,21 @@ private fun AuthRegisterPreview() {
 private fun AuthRegisterMismatchPreview() {
     CoFlowTheme {
         AuthScreen(
-            state = AuthUiState(
-                mode = AuthMode.REGISTER,
-                username = "Лиза",
-                contact = "liza@mail.ru",
-                password = "parol123",
-                confirmPassword = "parol124",
-                confirmError = "Пароли не совпадают"
-            ),
+            state =
+                AuthUiState(
+                    mode = AuthMode.REGISTER,
+                    username = "Лиза",
+                    contact = "liza@mail.ru",
+                    password = "parol123",
+                    confirmPassword = "parol124",
+                    confirmError = "Пароли не совпадают",
+                ),
             onUsernameChange = {},
             onContactChange = {},
             onPasswordChange = {},
             onConfirmChange = {},
             onToggleMode = {},
-            onSubmit = {}
+            onSubmit = {},
         )
     }
 }

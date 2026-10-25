@@ -2,8 +2,8 @@ package com.example.coflow.ui.tasks
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
-import com.example.coflow.repositories.FirebaseTaskRepositoryImpl
 import com.example.coflow.models.TaskModel
+import com.example.coflow.repositories.FirebaseTaskRepositoryImpl
 import com.example.coflow.repositories.TaskRepository
 import com.google.firebase.auth.FirebaseAuth
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -13,14 +13,19 @@ import kotlinx.coroutines.launch
 
 sealed class TasksUiState {
     object Loading : TasksUiState()
-    data class Success(val tasks: List<TaskModel>) : TasksUiState()
-    data class Error(val message: String) : TasksUiState()
+
+    data class Success(
+        val tasks: List<TaskModel>,
+    ) : TasksUiState()
+
+    data class Error(
+        val message: String,
+    ) : TasksUiState()
 }
 
 class TaskScreenViewModel(
-    private val repository: TaskRepository = FirebaseTaskRepositoryImpl()
+    private val repository: TaskRepository = FirebaseTaskRepositoryImpl(),
 ) : ViewModel() {
-
     private val _uiState = MutableStateFlow<TasksUiState>(TasksUiState.Loading)
     val uiState: StateFlow<TasksUiState> = _uiState.asStateFlow()
 
@@ -33,7 +38,8 @@ class TaskScreenViewModel(
             _uiState.value = TasksUiState.Loading
             try {
                 val result = repository.getAll()
-                result.onSuccess { tasks -> _uiState.value = TasksUiState.Success(tasks) }
+                result
+                    .onSuccess { tasks -> _uiState.value = TasksUiState.Success(tasks) }
                     .onFailure { e -> _uiState.value = TasksUiState.Error(e.message ?: "Ошибка загрузки задач") }
             } catch (e: Exception) {
                 _uiState.value = TasksUiState.Error(e.message ?: "Неизвестная ошибка при загрузке задач")
@@ -41,9 +47,7 @@ class TaskScreenViewModel(
         }
     }
 
-    fun getCurrentUserId(): String {
-        return FirebaseAuth.getInstance().currentUser?.uid ?: ""
-    }
+    fun getCurrentUserId(): String = FirebaseAuth.getInstance().currentUser?.uid ?: ""
 
     // Можно добавить методы addTask / deleteTask позже, когда будет экран создания
 }

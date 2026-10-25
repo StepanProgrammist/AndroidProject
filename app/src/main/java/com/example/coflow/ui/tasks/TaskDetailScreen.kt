@@ -18,30 +18,37 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-//import com.example.coflow.data.Task
-import com.example.coflow.models.TaskStatus
 import com.example.coflow.models.TaskModel
-import java.time.LocalDate
+import com.example.coflow.models.TaskStatus
 import com.example.coflow.ui.components.*
 import com.example.coflow.ui.theme.*
+import java.time.LocalDate
 import java.time.format.DateTimeFormatter
 
 @Composable
 fun TaskDetailScreen(
     task: TaskModel, // <-- ИЗМЕНЕНО С Task НА TaskModel
     onBackClick: () -> Unit,
-    onEditClick: () -> Unit
+    onEditClick: () -> Unit,
 ) {
     BackHandler(onBack = onBackClick)
     val formatter = DateTimeFormatter.ofPattern("dd.MM.yy")
     val taskDate = task.deadline.toLocalDate() // Конвертируем LocalDateTime в LocalDate
     val today = LocalDate.now()
     Box(
-        modifier = Modifier
-            .fillMaxSize()
-            .background(coFlowTasksBackgroundBrush())
+        modifier =
+            Modifier
+                .fillMaxSize()
+                .background(coFlowTasksBackgroundBrush()),
     ) {
-        Column(modifier = Modifier.fillMaxSize().navigationBarsPadding().imePadding().padding(horizontal = CoFlowSpacing.ScreenHorizontal)) {
+        Column(
+            modifier =
+                Modifier
+                    .fillMaxSize()
+                    .navigationBarsPadding()
+                    .imePadding()
+                    .padding(horizontal = CoFlowSpacing.ScreenHorizontal),
+        ) {
             CoFlowScreenHeader(
                 title = "Задача",
                 onBackClick = onBackClick,
@@ -49,42 +56,43 @@ fun TaskDetailScreen(
                     // Карандаш (показываем только если статус TODO)
                     if (task.status == TaskStatus.TODO) {
                         Box(
-                            modifier = Modifier
-                                .size(40.dp)
-                                .clip(CircleShape)
-                                .background(CoFlowColors.Blue)
-                                .clickable { onEditClick() },
-                            contentAlignment = Alignment.Center
+                            modifier =
+                                Modifier
+                                    .size(40.dp)
+                                    .clip(CircleShape)
+                                    .background(CoFlowColors.Blue)
+                                    .clickable { onEditClick() },
+                            contentAlignment = Alignment.Center,
                         ) {
                             CoFlowIcon(
                                 name = "edit",
                                 modifier = Modifier.size(18.dp),
-                                color = Color.White
+                                color = Color.White,
                             )
                         }
                     }
-                }
+                },
             )
 
             // Основной контент
             Column(
-                modifier = Modifier
-                    .weight(1f)
-                    .verticalScroll(rememberScrollState()),
-                verticalArrangement = Arrangement.spacedBy(16.dp)
+                modifier =
+                    Modifier
+                        .weight(1f)
+                        .verticalScroll(rememberScrollState()),
+                verticalArrangement = Arrangement.spacedBy(16.dp),
             ) {
                 CoFlowGlassCard(modifier = Modifier.fillMaxWidth()) {
                     Column(
                         modifier = Modifier.padding(16.dp),
-                        verticalArrangement = Arrangement.spacedBy(16.dp)
+                        verticalArrangement = Arrangement.spacedBy(16.dp),
                     ) {
-
                         // Название
                         Text(
                             text = task.title,
                             fontSize = 20.sp,
                             fontWeight = FontWeight.Bold,
-                            color = CoFlowColors.TextPrimary
+                            color = CoFlowColors.TextPrimary,
                         )
 
                         // Теги
@@ -100,7 +108,7 @@ fun TaskDetailScreen(
                             Text(
                                 text = task.description.ifBlank { "Описание отсутствует" },
                                 fontSize = 13.sp,
-                                color = CoFlowColors.TextSecondary
+                                color = CoFlowColors.TextSecondary,
                             )
                         }
 
@@ -111,7 +119,7 @@ fun TaskDetailScreen(
                             Text(
                                 text = task.authorId ?: "Неизвестно",
                                 fontSize = 13.sp,
-                                color = CoFlowColors.TextSecondary
+                                color = CoFlowColors.TextSecondary,
                             )
                         }
 
@@ -121,7 +129,7 @@ fun TaskDetailScreen(
                             Spacer(Modifier.height(8.dp))
                             Row(
                                 modifier = Modifier.fillMaxWidth(),
-                                verticalAlignment = Alignment.CenterVertically
+                                verticalAlignment = Alignment.CenterVertically,
                             ) {
                                 CoFlowIcon(name = "person", modifier = Modifier.size(24.dp), color = CoFlowColors.TextSecondary)
                                 Spacer(Modifier.width(12.dp))
@@ -132,7 +140,7 @@ fun TaskDetailScreen(
                                     text = executorText,
                                     fontSize = 13.sp,
                                     color = CoFlowColors.TextPrimary,
-                                    modifier = Modifier.weight(1f)
+                                    modifier = Modifier.weight(1f),
                                 )
                                 CoFlowIcon(name = "chevron", modifier = Modifier.size(16.dp), color = CoFlowColors.Blue)
                             }
@@ -144,20 +152,27 @@ fun TaskDetailScreen(
                                 "Дата окончания",
                                 fontSize = 13.sp,
                                 fontWeight = FontWeight.SemiBold,
-                                color = CoFlowColors.TextPrimary
+                                color = CoFlowColors.TextPrimary,
                             )
                             Spacer(Modifier.height(8.dp))
                             Row(verticalAlignment = Alignment.CenterVertically) {
                                 CoFlowIcon(
                                     name = "calendar",
                                     modifier = Modifier.size(20.dp),
-                                    color = CoFlowColors.TextSecondary
+                                    color = CoFlowColors.TextSecondary,
                                 )
                                 Spacer(Modifier.width(12.dp))
                                 Text(
                                     taskDate.format(formatter),
                                     fontSize = 13.sp,
-                                    color = if (taskDate.isBefore(today) && task.status != TaskStatus.DONE) CoFlowColors.Error else CoFlowColors.TextPrimary
+                                    color =
+                                        if (taskDate.isBefore(today) &&
+                                            task.status != TaskStatus.DONE
+                                        ) {
+                                            CoFlowColors.Error
+                                        } else {
+                                            CoFlowColors.TextPrimary
+                                        },
                                 )
                             }
                         }
@@ -171,7 +186,7 @@ fun TaskDetailScreen(
                 CoFlowPrimaryButton(
                     text = if (task.status == TaskStatus.TODO) "Взять задачу" else "Выполнить",
                     onClick = { /* TODO: София подвяжет смену статуса */ },
-                    modifier = Modifier.padding(top = 8.dp, bottom = 16.dp)
+                    modifier = Modifier.padding(top = 8.dp, bottom = 16.dp),
                 )
             }
         }
@@ -180,27 +195,27 @@ fun TaskDetailScreen(
 
 @Composable
 private fun TagChip(text: String) {
-    val bgColor =  CoFlowColors.Blue.copy(alpha = 0.15f)
-    val textColor =  CoFlowColors.Blue
+    val bgColor = CoFlowColors.Blue.copy(alpha = 0.15f)
+    val textColor = CoFlowColors.Blue
     Box(
-        modifier = Modifier
-            .background(bgColor, shape = RoundedCornerShape(8.dp))
-            .border(1.dp, textColor.copy(alpha = 0.3f), RoundedCornerShape(8.dp))
-            .padding(horizontal = 10.dp, vertical = 4.dp)
+        modifier =
+            Modifier
+                .background(bgColor, shape = RoundedCornerShape(8.dp))
+                .border(1.dp, textColor.copy(alpha = 0.3f), RoundedCornerShape(8.dp))
+                .padding(horizontal = 10.dp, vertical = 4.dp),
     ) {
         Text(
             text = text,
             fontSize = 11.sp,
             color = textColor,
-            fontWeight = FontWeight.Medium
+            fontWeight = FontWeight.Medium,
         )
     }
 }
 
-private fun getStatusText(status: TaskStatus): String {
-    return when (status) {
+private fun getStatusText(status: TaskStatus): String =
+    when (status) {
         TaskStatus.TODO -> "К исполнению"
         TaskStatus.IN_PROCESS -> "В процессе"
         TaskStatus.DONE -> "Сделано"
     }
-}
