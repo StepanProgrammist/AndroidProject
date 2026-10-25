@@ -28,10 +28,8 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 //import com.example.coflow.data.Task
-//import com.example.coflow.models.TaskStatus
+import com.example.coflow.models.TaskStatus
 import com.example.coflow.models.TaskModel
-import com.example.coflow.data.firebase.TaskStatus
-import com.google.firebase.auth.FirebaseAuth
 import java.time.LocalDateTime
 //import com.example.coflow.data.TasksTestData
 import com.example.coflow.ui.components.*
@@ -97,12 +95,12 @@ fun TasksScreen(
             val isMineSelected = selectedFilters.contains(stringResource(R.string.filter_mine))
             val projectFilters = selectedFilters.filter { it.startsWith("Проект") }
 
-            val isMine = task.executorRef?.id == currentUserId || task.authorRef?.id == currentUserId
+            val isMine = task.executorId == currentUserId || task.authorId == currentUserId
 
-            // Пока фильтруем по ID проекта (projectRef.id).
+            // Пока фильтруем по ID проекта (projectId).
             // Когда появится кэш имён проектов — заменим на сравнение по имени.
             val matchesProject = projectFilters.any { filterName ->
-                task.projectRef?.id == filterName || task.projectRef?.path?.contains(filterName) == true
+                task.projectId == filterName || task.projectId?.contains(filterName) == true
             }
 
             (isMineSelected && isMine) || matchesProject
@@ -298,7 +296,7 @@ private fun TaskRow(task: TaskModel, onClick: () -> Unit) {
 
     // Пока показываем ID проекта как временное решение.
     // Позже здесь будет резолв имени из кэша проектов.
-    val projectNameDisplay = task.projectRef?.id ?: "Без проекта"
+    val projectNameDisplay = task.projectId ?: "Без проекта"
 
     Column(modifier = Modifier.fillMaxWidth().padding(vertical = 6.dp).clickable { onClick() }) {
         Row(modifier = Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
@@ -387,7 +385,7 @@ private fun SortFilterPanel(
             }
             DropdownMenu(expanded = expanded, onDismissRequest = { expanded = false }, shape = RoundedCornerShape(16.dp), containerColor = Color(0xFFF4F8FF).copy(alpha = 0.62f), tonalElevation = 0.dp, shadowElevation = 0.dp, border = BorderStroke(1.dp, Color.White.copy(alpha = 0.82f))) {
                 // Берем реальные ID проектов из загруженных задач, убираем дубликаты
-                val realProjectIds = tasks.mapNotNull { it.projectRef?.id }.distinct()
+                val realProjectIds = tasks.mapNotNull { it.projectId }.distinct()
 
                 // Формируем итоговый список: базовые фильтры + реальные проекты из БД
                 val availableFilters = listOf(

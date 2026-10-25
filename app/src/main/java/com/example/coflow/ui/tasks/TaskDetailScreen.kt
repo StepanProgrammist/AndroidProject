@@ -19,9 +19,8 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 //import com.example.coflow.data.Task
-//import com.example.coflow.models.TaskStatus
+import com.example.coflow.models.TaskStatus
 import com.example.coflow.models.TaskModel
-import com.example.coflow.data.firebase.TaskStatus
 import java.time.LocalDate
 import com.example.coflow.ui.components.*
 import com.example.coflow.ui.theme.*
@@ -91,7 +90,7 @@ fun TaskDetailScreen(
                         // Теги
                         Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                             TagChip(text = getStatusText(task.status))
-                            TagChip(text = task.projectRef?.id ?: "Без проекта")
+                            TagChip(text = task.projectId ?: "Без проекта")
                         }
 
                         // Описание
@@ -110,7 +109,7 @@ fun TaskDetailScreen(
                             Text("Автор задачи", fontSize = 13.sp, fontWeight = FontWeight.SemiBold, color = CoFlowColors.TextPrimary)
                             Spacer(Modifier.height(4.dp))
                             Text(
-                                text = task.authorRef?.id ?: "Неизвестно",
+                                text = task.authorId ?: "Неизвестно",
                                 fontSize = 13.sp,
                                 color = CoFlowColors.TextSecondary
                             )
@@ -127,7 +126,7 @@ fun TaskDetailScreen(
                                 CoFlowIcon(name = "person", modifier = Modifier.size(24.dp), color = CoFlowColors.TextSecondary)
                                 Spacer(Modifier.width(12.dp))
 
-                                val executorText = task.executorRef?.id ?: "Не назначен"
+                                val executorText = task.executorId ?: "Не назначен"
 
                                 Text(
                                     text = executorText,

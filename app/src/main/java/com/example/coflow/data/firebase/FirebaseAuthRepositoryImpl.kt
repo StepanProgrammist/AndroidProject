@@ -22,23 +22,17 @@ class FirebaseAuthRepositoryImpl : AuthRepository {
             val result = auth.createUserWithEmailAndPassword(email, password).await()
             val uid = result.user?.uid ?: throw Exception("Не удалось получить UID")
 
-            val userSchema = UserSchema(uid = uid, email = email, name = name)
-
             usersCollection.document(uid).set(
                 mapOf(
-                    "uid" to userSchema.uid,
-                    "email" to userSchema.email,
-                    "name" to userSchema.name,
+                    "uid" to uid,
+                    "email" to email,
+                    "name" to name,
                     "createdAt" to FieldValue.serverTimestamp()
                 )
             ).await()
 
-            // Перечитываем документ, чтобы получить серверный createdAt
-            val created = usersCollection.document(uid).get().await()
-                .toObject(UserSchema::class.java)
-                ?: throw Exception("Не удалось прочитать созданный профиль")
+            Result.success(UserModel(id = uid, name = name, email = email))
 
-            Result.success(userSchema.toDomain())
         } catch (e: Exception) {
             val errorMessage = when (e) {
                 is FirebaseAuthWeakPasswordException -> "Пароль слишком простой (минимум 6 символов)"
@@ -55,11 +49,10 @@ class FirebaseAuthRepositoryImpl : AuthRepository {
             val uid = auth.currentUser?.uid ?: throw Exception("Не удалось получить UID")
 
             val doc = usersCollection.document(uid).get().await()
-
-            val userSchema = doc.toObject(UserSchema::class.java)
+            val user = doc.toObject(UserModel::class.java)?.copy(id = doc.id)
                 ?: throw Exception("Профиль пользователя не найден")
 
-            Result.success(userSchema.toDomain())
+            Result.success(user)
         } catch (e: Exception) {
             val errorMessage = when (e) {
                 is FirebaseAuthInvalidCredentialsException -> "Неверная почта или пароль"
@@ -82,26 +75,23 @@ class FirebaseAuthRepositoryImpl : AuthRepository {
 
             // Если пользователь заходит впервые — создаем документ в Firestore
             val userDoc = usersCollection.document(uid).get().await()
-            val schema = if (userDoc.exists()) {
-                userDoc.toObject(UserSchema::class.java)
+            val appUser = if (userDoc.exists()) {
+                userDoc.toObject(UserModel::class.java)?.copy(id = userDoc.id)
                     ?: throw Exception("Не удалось прочитать профиль")
             } else {
-                val newSchema = UserSchema(uid = uid, name = name, email = email)
                 usersCollection.document(uid).set(
                     mapOf(
-                        "uid" to newSchema.uid,
-                        "email" to newSchema.email,
-                        "name" to newSchema.name,
+                        "uid" to uid,
+                        "email" to email,
+                        "name" to name,
                         "createdAt" to FieldValue.serverTimestamp()
                     )
                 ).await()
 
-                usersCollection.document(uid).get().await()
-                    .toObject(UserSchema::class.java)
-                    ?: throw Exception("Не удалось прочитать созданный профиль")
+                UserModel(id = uid, name = name, email = email)
             }
 
-            Result.success(schema.toDomain())
+            Result.success(appUser)
         } catch (e: Exception) {
             Result.failure(Exception(e.message ?: "Ошибка входа через Google"))
         }

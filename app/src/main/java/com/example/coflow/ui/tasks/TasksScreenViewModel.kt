@@ -32,9 +32,9 @@ class TaskScreenViewModel(
         viewModelScope.launch {
             _uiState.value = TasksUiState.Loading
             try {
-                // ВАЖНО: Убедись, что в TaskRepository добавлен метод getAll()
-                val tasks = repository.getAll()
-                _uiState.value = TasksUiState.Success(tasks)
+                val result = repository.getAll()
+                result.onSuccess { tasks -> _uiState.value = TasksUiState.Success(tasks) }
+                    .onFailure { e -> _uiState.value = TasksUiState.Error(e.message ?: "Ошибка загрузки задач") }
             } catch (e: Exception) {
                 _uiState.value = TasksUiState.Error(e.message ?: "Неизвестная ошибка при загрузке задач")
             }
