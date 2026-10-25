@@ -92,3 +92,70 @@ fun CoFlowGlassIconButton(
         CoFlowIcon(name = iconName, modifier = Modifier.size(iconSize), color = CoFlowColors.TextPrimary)
     }
 }
+
+
+
+/**
+ * Новая синяя кнопка для сохранения изменений.
+ */
+@Composable
+fun CoFlowEditSaveButton(
+    text: String,
+    onClick: () -> Unit,
+    modifier: Modifier = Modifier,
+    enabled: Boolean = true
+) {
+    Button(
+        onClick = onClick,
+        enabled = enabled,
+        modifier = modifier.height(48.dp),
+        shape = CoFlowShapes.Button,
+        colors = ButtonDefaults.buttonColors(
+            containerColor = CoFlowColors.Blue,
+            contentColor = Color.White,
+            disabledContainerColor = CoFlowColors.Blue.copy(alpha = 0.45f)
+        )
+    ) {
+        Text(
+            text = text,
+            fontSize = 13.sp,
+            fontWeight = FontWeight.SemiBold
+        )
+    }
+}
+
+/**
+ * Новая универсальная белая кнопка с красным текстом.
+ * Надпись задаётся снаружи: «Удалить», «Отмена» и т. д.
+ */
+@Composable
+fun CoFlowEditDeleteButton(
+    text: String,
+    onClick: () -> Unit,
+    modifier: Modifier = Modifier,
+    enabled: Boolean = true
+) {
+    Button(
+        onClick = onClick,
+        enabled = enabled,
+        modifier = modifier.height(48.dp),
+        shape = CoFlowShapes.Button,
+        colors = ButtonDefaults.buttonColors(
+            containerColor = Color.White,
+            contentColor = Color.Red,
+            disabledContainerColor = Color.White.copy(alpha = 0.6f),
+            disabledContentColor = Color.Red.copy(alpha = 0.5f)
+        ),
+        elevation = ButtonDefaults.buttonElevation(
+            defaultElevation = 2.dp,
+            pressedElevation = 1.dp,
+            disabledElevation = 0.dp
+        )
+    ) {
+        Text(
+            text = text,
+            fontSize = 13.sp,
+            fontWeight = FontWeight.SemiBold
+        )
+    }
+}

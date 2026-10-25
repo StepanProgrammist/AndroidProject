@@ -2,6 +2,7 @@ package com.example.coflow.data
 
 import java.time.LocalDate
 import com.example.coflow.models.TaskStatus
+import androidx.compose.runtime.mutableStateListOf
 
 /**
  * Временные данные для проверки экрана задач.
@@ -10,7 +11,7 @@ import com.example.coflow.models.TaskStatus
 object TasksTestData {
     private val today = LocalDate.now()
 
-    val tasks = listOf(
+    val tasks = mutableStateListOf(
         Task(
             id = 1,
             title = "Согласовать план проекта",
@@ -146,4 +147,11 @@ object TasksTestData {
             assignees = listOf("Анна Смирнова", "Иван Петров")
         )
     )
+
+    fun updateTask(updatedTask: Task) {
+        val index = tasks.indexOfFirst { it.id == updatedTask.id }
+        if (index != -1) {
+            tasks[index] = updatedTask
+        }
+    }
 }
