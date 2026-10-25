@@ -2,8 +2,8 @@ package com.example.coflow.ui.tasks
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
-import com.example.coflow.data.firebase.FirebaseTaskRepositoryImpl
-import com.example.coflow.data.firebase.TaskRepository
+import com.example.coflow.repositories.FirebaseTaskRepositoryImpl
+import com.example.coflow.repositories.TaskRepository
 import com.example.coflow.models.TaskModel
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow

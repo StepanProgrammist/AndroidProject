@@ -1,6 +1,8 @@
-package com.example.coflow.data.firebase
+package com.example.coflow.data.repositories
 
 import androidx.test.ext.junit.runners.AndroidJUnit4
+import com.example.coflow.repositories.FirebaseTaskRepositoryImpl
+import com.example.coflow.repositories.TaskRepository
 import com.google.firebase.firestore.FirebaseFirestore
 import kotlinx.coroutines.runBlocking
 import org.junit.Assert.*
