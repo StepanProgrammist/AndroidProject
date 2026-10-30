@@ -1,5 +1,6 @@
 package com.example.coflow
 
+import android.annotation.SuppressLint
 import android.os.Bundle
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
@@ -8,16 +9,25 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
+import androidx.compose.ui.res.stringResource
+import androidx.lifecycle.viewmodel.compose.viewModel
+import androidx.navigation.NavType
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
+import androidx.navigation.navArgument
 import com.example.coflow.ui.auth.AuthRoute
-import com.example.coflow.ui.tasks.ChooseAssigneeScreen
-import com.example.coflow.ui.tasks.ChooseDateScreen
-import com.example.coflow.ui.tasks.ChooseProjectScreen
+import com.example.coflow.ui.projects.ProjectsRoute
+import com.example.coflow.ui.tasks.ChooseAssigneeRoute
+import com.example.coflow.ui.tasks.ChooseDateRoute
+import com.example.coflow.ui.tasks.ChooseProjectRoute
 import com.example.coflow.ui.tasks.CreateTaskRoute
+import com.example.coflow.ui.tasks.CreateTaskViewModel
+import com.example.coflow.ui.tasks.TaskDetailRoute
 import com.example.coflow.ui.tasks.TaskDetailScreen
-import com.example.coflow.ui.tasks.TasksScreen
+import com.example.coflow.ui.tasks.TaskDetailUiState
+import com.example.coflow.ui.tasks.TaskStatusUi
+import com.example.coflow.ui.tasks.TasksRoute
 import com.example.coflow.ui.theme.CoFlowTheme
 
 object Screen {
@@ -33,6 +43,7 @@ object Screen {
 }
 
 class MainActivity : ComponentActivity() {
+    @SuppressLint("ComposableDestinationInComposeScope")
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         enableEdgeToEdge()
@@ -44,14 +55,16 @@ class MainActivity : ComponentActivity() {
                 if (isAuthenticated) {
                     val navController = rememberNavController()
                     val createTaskViewModel: CreateTaskViewModel = viewModel()
+                    val defaultFilterText = stringResource(R.string.filter_none)
 
                     NavHost(navController = navController, startDestination = Screen.TASKS) {
                         // Экран Мои задачи
                         composable(Screen.TASKS) {
-                            TasksScreen(
+                            TasksRoute(
                                 onNavigateToCreateTask = { navController.navigate(Screen.CREATE_TASK) },
                                 onNavigateToTaskDetail = { taskId -> navController.navigate("task_detail/$taskId") },
-                                onNavigateToProjects = { navController.navigate(Screen.PROJECTS) }
+                                onNavigateToProjects = { navController.navigate(Screen.PROJECTS) },
+                                onNavigateToProfile = {  }
                             )
                         }
 
@@ -72,6 +85,17 @@ class MainActivity : ComponentActivity() {
                         // Экран просмотра задачи
                         composable(
                             route = Screen.TASK_DETAIL,
+                            arguments = listOf(navArgument("taskId") { type = NavType.StringType })
+                        ) {
+                            TaskDetailRoute(
+                                onNavigateBack = { navController.popBackStack() },
+                                onNavigateToEdit = { taskId ->
+                                    // TODO: Раскомментировать, когда будет экран редактирования
+                                }
+                            )
+                        // Экран просмотра задачи
+                        composable(
+                            route = Screen.TASK_DETAIL,
                             arguments = listOf(navArgument("taskId") { type = NavType.IntType })
                         ) { backStackEntry ->
                             val taskId = backStackEntry.arguments?.getInt("taskId")
@@ -84,39 +108,6 @@ class MainActivity : ComponentActivity() {
                                     onBackClick = { navController.popBackStack() },
                                     onEditClick = {
                                         navController.navigate("edit_task/${task.id}")
-                                    }
-                                )
-                            }
-                        }
-
-
-                        composable(
-                            route = Screen.EDIT_TASK,
-                            arguments = listOf(
-                                androidx.navigation.navArgument("taskId") {
-                                    type = androidx.navigation.NavType.IntType
-                                }
-                            )
-                        ) { backStackEntry ->
-                            val taskId = backStackEntry.arguments?.getInt("taskId")
-                            val task = com.example.coflow.data.TasksTestData.tasks
-                                .find { it.id == taskId }
-
-                            if (task != null) {
-                                EditTaskRoute(
-                                    task = task,
-                                    savedStateHandle = backStackEntry.savedStateHandle,
-                                    onBackClick = {
-                                        navController.popBackStack()
-                                    },
-                                    onNavigateToAssignees = {
-                                        navController.navigate(Screen.CHOOSE_ASSIGNEE)
-                                    },
-                                    onNavigateToProject = {
-                                        navController.navigate(Screen.CHOOSE_PROJECT)
-                                    },
-                                    onNavigateToDate = {
-                                        navController.navigate(Screen.CHOOSE_DATE)
                                     }
                                 )
                             }
@@ -139,51 +130,41 @@ class MainActivity : ComponentActivity() {
 
                         // Экран выбора исполнителей
                         composable(Screen.CHOOSE_ASSIGNEE) {
-                            ChooseAssigneeScreen(
+                            ChooseAssigneeRoute(
                                 onBackClick = { navController.popBackStack() },
-                                onConfirmSelection = { selectedAssignees ->
-                                    navController.previousBackStackEntry
-                                        ?.savedStateHandle
-                                        ?.set(
-                                            "selected_task_assignees",
-                                            selectedAssignees.map { it.name }.toTypedArray()
-                                        )
-
+                                onConfirmSelection = { assignees ->
+                                    createTaskViewModel.confirmAssigneeSelection(assignees)
                                     navController.popBackStack()
-                                }
+                                },
+                                viewModel = createTaskViewModel
                             )
                         }
 
                         // Экран выбора проекта
                         composable(Screen.CHOOSE_PROJECT) {
-                            ChooseProjectScreen(
+                            ChooseProjectRoute(
                                 onBackClick = { navController.popBackStack() },
-                                onConfirmSelection = { selectedProject ->
-                                    navController.previousBackStackEntry
-                                        ?.savedStateHandle
-                                        ?.set("selected_task_project", selectedProject)
-
-                                    navController.popBackStack()
-                                }
-                            )
-                        }
-
-                        //экран выбора даты
-                        composable(Screen.CHOOSE_DATE) {
-                            ChooseDateScreen(
-                                onBackClick = {
+                                onConfirmSelection = { project ->
+                                    createTaskViewModel.confirmProjectSelection(project)
                                     navController.popBackStack()
                                 },
-                                onConfirmSelection = { selectedDate ->
-                                    // Возвращаем выбранную дату в предыдущий экран.
-                                    navController.previousBackStackEntry
-                                        ?.savedStateHandle
-                                        ?.set("selected_task_date", selectedDate)
-
-                                    navController.popBackStack()
-                                }
+                                viewModel = createTaskViewModel
                             )
                         }
+
+                        // Экран выбора даты
+                        composable(Screen.CHOOSE_DATE) {
+                            ChooseDateRoute(
+                                onBackClick = { navController.popBackStack() },
+                                onConfirmSelection = { date ->
+                                    createTaskViewModel.confirmDateSelection(date)
+                                    navController.popBackStack()
+                                },
+                                viewModel = createTaskViewModel
+                            )
+                        }
+
+
                     }
                 } else {
                     AuthRoute(onAuthSuccess = { isAuthenticated = true })
