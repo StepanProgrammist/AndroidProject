@@ -3,7 +3,6 @@ package com.example.coflow.ui.projects
 import androidx.annotation.StringRes
 import androidx.lifecycle.ViewModel
 import com.example.coflow.R
-import com.example.coflow.data.ProjectsTestData
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
