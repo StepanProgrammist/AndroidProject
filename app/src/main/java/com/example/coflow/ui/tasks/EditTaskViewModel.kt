@@ -1,86 +1,115 @@
-
 package com.example.coflow.ui.tasks
 
+import androidx.compose.runtime.Composable
+import androidx.lifecycle.SavedStateHandle
 import androidx.lifecycle.ViewModel
-import com.example.coflow.data.Task
+import androidx.lifecycle.viewModelScope
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.update
-import java.time.format.DateTimeFormatter
-import java.time.LocalDate
 
-// Состояние формы редактирования задачи.
+data class Task(
+    val id: Int,
+    val title: String,
+    val description: String,
+    val assignees: List<String>,
+    val projectName: String,
+    val dueDate: String,
+    val status: TaskStatusUi = TaskStatusUi.TODO
+)
+
 data class EditTaskUiState(
+    val taskId: Int = 0,
     val title: String = "",
     val description: String = "",
     val assignees: String = "",
     val project: String = "",
     val dueDate: String = "",
-) {
-    // Название задачи обязательно для заполнения.
-    val canSave: Boolean
-        get() = title.isNotBlank()
-}
+    val canSave: Boolean = false,
+    val showDeleteDialog: Boolean = false // <-- Добавлено для управления диалогом из ViewModel
+)
 
-// ViewModel управляет только состоянием интерфейса редактирования.
-class EditTaskViewModel : ViewModel() {
+class EditTaskViewModel(
+    private val savedStateHandle: SavedStateHandle
+) : ViewModel() {
 
     private val _state = MutableStateFlow(EditTaskUiState())
     val state: StateFlow<EditTaskUiState> = _state.asStateFlow()
 
-    // Преобразуем дату задачи в формат, используемый в форме.
-    private val dateFormatter = DateTimeFormatter.ofPattern("dd.MM.yyyy")
-
-    // Заполняем форму данными выбранной задачи.
-    fun loadTask(task: Task) {
-        _state.update {
-            it.copy(
-                title = task.title,
-                description = task.description,
-                assignees = task.assignees.joinToString(", "),
-                project = task.projectName,
-                dueDate = task.dueDate.format(dateFormatter)
-            )
-        }
+    init {
+        // Читаем taskId напрямую из аргументов навигации "edit_task/{taskId}"
+        val taskId = savedStateHandle.get<String>("taskId")?.toIntOrNull() ?: 1
+        loadTask(taskId)
     }
 
-    fun onTitleChange(value: String) {
-        _state.update { it.copy(title = value) }
-    }
-
-    fun onDescriptionChange(value: String) {
-        _state.update { it.copy(description = value.take(250)) }
-    }
-
-    fun onAssigneesChange(value: String) {
-        _state.update { it.copy(assignees = value) }
-    }
-
-    fun onProjectChange(value: String) {
-        _state.update { it.copy(project = value) }
-    }
-
-    fun onDueDateChange(value: String) {
-        _state.update { it.copy(dueDate = value) }
-    }
-
-    fun buildUpdatedTask(originalTask: Task): Task? {
-        val current = _state.value
-
-        val parsedDate = runCatching {
-            LocalDate.parse(current.dueDate, dateFormatter)
-        }.getOrNull() ?: return null
-
-        return originalTask.copy(
-            title = current.title.trim(),
-            description = current.description,
-            assignees = current.assignees
-                .split(",")
-                .map { it.trim() }
-                .filter { it.isNotEmpty() },
-            projectName = current.project,
-            dueDate = parsedDate
+    private fun loadTask(taskId: Int) {
+        val mockTask = getMockTask(taskId)
+        _state.value = EditTaskUiState(
+            taskId = mockTask.id,
+            title = mockTask.title,
+            description = mockTask.description,
+            assignees = mockTask.assignees.joinToString(", "),
+            project = mockTask.projectName,
+            dueDate = mockTask.dueDate,
+            canSave = true,
+            showDeleteDialog = false
         )
+    }
+
+    fun onTitleChange(newTitle: String) {
+        _state.update { it.copy(title = newTitle, canSave = newTitle.isNotBlank() && it.dueDate.isNotBlank()) }
+    }
+
+    fun onDescriptionChange(newDescription: String) {
+        _state.update { it.copy(description = newDescription) }
+    }
+
+    fun onAssigneesChange(newAssignees: String) {
+        _state.update { it.copy(assignees = newAssignees) }
+    }
+
+    fun onProjectChange(newProject: String) {
+        _state.update { it.copy(project = newProject) }
+    }
+
+    fun onDueDateChange(newDate: String) {
+        _state.update { it.copy(dueDate = newDate, canSave = it.title.isNotBlank() && newDate.isNotBlank()) }
+    }
+
+    // Аналог onCreateTask из CreateTaskViewModel
+    fun onSaveTask(onTaskSaved: (Task) -> Unit) {
+        val currentState = _state.value
+        val updatedTask = Task(
+            id = currentState.taskId,
+            title = currentState.title,
+            description = currentState.description,
+            assignees = currentState.assignees.split(", ").map { it.trim() }.filter { it.isNotBlank() },
+            projectName = currentState.project,
+            dueDate = currentState.dueDate,
+            status = TaskStatusUi.TODO // Или сохраняем старый статус
+        )
+        onTaskSaved(updatedTask)
+    }
+
+    fun showDeleteDialog() {
+        _state.update { it.copy(showDeleteDialog = true) }
+    }
+
+    fun hideDeleteDialog() {
+        _state.update { it.copy(showDeleteDialog = false) }
+    }
+    fun confirmDelete(onTaskDeleted: (Int) -> Unit) {
+        onTaskDeleted(_state.value.taskId)
+        hideDeleteDialog()
+    }
+}
+
+// Заглушка для получения задачи по ID (можно вынести в отдельный файл TestData)
+private fun getMockTask(taskId: Int): Task {
+    return when (taskId) {
+        1 -> Task(1, "Обновить иконки в навигации", "", emptyList(), "Дизайн-система", "30.10.26")
+        3 -> Task(3, "Разработать новый онбординг", "Нужно сделать 3 экрана.", listOf("Мария Иванова", "Ты"), "Мобильное приложение", "24.10.26")
+        else -> Task(taskId, "Провести ревью кода", "Все замечания исправлены.", listOf("Ты"), "Бэкенд", "20.10.26")
     }
 }

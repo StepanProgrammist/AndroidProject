@@ -23,6 +23,7 @@ import com.example.coflow.ui.tasks.ChooseDateRoute
 import com.example.coflow.ui.tasks.ChooseProjectRoute
 import com.example.coflow.ui.tasks.CreateTaskRoute
 import com.example.coflow.ui.tasks.CreateTaskViewModel
+import com.example.coflow.ui.tasks.EditTaskRoute
 import com.example.coflow.ui.tasks.TaskDetailRoute
 import com.example.coflow.ui.tasks.TaskDetailScreen
 import com.example.coflow.ui.tasks.TaskDetailUiState
@@ -64,7 +65,7 @@ class MainActivity : ComponentActivity() {
                                 onNavigateToCreateTask = { navController.navigate(Screen.CREATE_TASK) },
                                 onNavigateToTaskDetail = { taskId -> navController.navigate("task_detail/$taskId") },
                                 onNavigateToProjects = { navController.navigate(Screen.PROJECTS) },
-                                onNavigateToProfile = {  }
+                                onNavigateToProfile = { }
                             )
                         }
 
@@ -89,122 +90,83 @@ class MainActivity : ComponentActivity() {
                         ) {
                             TaskDetailRoute(
                                 onNavigateBack = { navController.popBackStack() },
-                                onNavigateToEdit = { taskId ->
-                                    // TODO: Раскомментировать, когда будет экран редактирования
-                                }
+                                onNavigateToEdit = { taskId -> navController.navigate("edit_task/$taskId")}
                             )
-                        // Экран просмотра задачи
-                        composable(
-                            route = Screen.TASK_DETAIL,
-                            arguments = listOf(navArgument("taskId") { type = NavType.IntType })
-                        ) { backStackEntry ->
-                            val taskId = backStackEntry.arguments?.getInt("taskId")
-                            // Ищем задачу в тестовых данных по ID
-                            val task = TasksTestData.tasks.find { it.id == taskId }
-
-                            if (task != null) {
-                                TaskDetailScreen(
-                                    task = task,
-                                    onBackClick = { navController.popBackStack() },
-                                    onEditClick = {
-                                        navController.navigate("edit_task/${task.id}")
-                                    }
-                                )
-                            }
                         }
-
-                        // Экран создания задачи
-                        composable(Screen.CREATE_TASK) {
-                            CreateTaskRoute(
-                                onBackClick = { navController.popBackStack() },
-                                onTaskCreated = { formData ->
-                                    // TODO: Сохранение задачи через TasksRepository
+                        // Экран редактирования задачи
+                        composable(
+                            route = Screen.EDIT_TASK,
+                            arguments = listOf(navArgument("taskId") { type = NavType.StringType })
+                        ) {
+                            EditTaskRoute(
+                                onNavigateBack = { navController.popBackStack() },
+                                onTaskSaved = { updatedTask ->
+                                    // TODO: Здесь вызов Repository для сохранения: tasksRepository.updateTask(updatedTask)
+                                    navController.popBackStack()
+                                },
+                                onTaskDeleted = { taskId ->
+                                    // TODO: Здесь вызов Repository для удаления: tasksRepository.deleteTask(taskId)
                                     navController.popBackStack()
                                 },
                                 onNavigateToAssignees = { navController.navigate(Screen.CHOOSE_ASSIGNEE) },
                                 onNavigateToProject = { navController.navigate(Screen.CHOOSE_PROJECT) },
-                                onNavigateToDate = { navController.navigate(Screen.CHOOSE_DATE) },
-                                viewModel = createTaskViewModel
+                                onNavigateToDate = { navController.navigate(Screen.CHOOSE_DATE) }
                             )
                         }
 
-                        // Экран выбора исполнителей
-                        composable(Screen.CHOOSE_ASSIGNEE) {
-                            ChooseAssigneeRoute(
-                                onBackClick = { navController.popBackStack() },
-                                onConfirmSelection = { assignees ->
-                                    createTaskViewModel.confirmAssigneeSelection(assignees)
-                                    navController.popBackStack()
-                                },
-                                viewModel = createTaskViewModel
-                            )
-                        }
+                            // Экран создания задачи
+                            composable(Screen.CREATE_TASK) {
+                                CreateTaskRoute(
+                                    onBackClick = { navController.popBackStack() },
+                                    onTaskCreated = { formData ->
+                                        // TODO: Сохранение задачи через TasksRepository
+                                        navController.popBackStack()
+                                    },
+                                    onNavigateToAssignees = { navController.navigate(Screen.CHOOSE_ASSIGNEE) },
+                                    onNavigateToProject = { navController.navigate(Screen.CHOOSE_PROJECT) },
+                                    onNavigateToDate = { navController.navigate(Screen.CHOOSE_DATE) },
+                                    viewModel = createTaskViewModel
+                                )
+                            }
 
-                        // Экран выбора проекта
-                        composable(Screen.CHOOSE_PROJECT) {
-                            ChooseProjectRoute(
-                                onBackClick = { navController.popBackStack() },
-                                onConfirmSelection = { project ->
-                                    createTaskViewModel.confirmProjectSelection(project)
-                                    navController.popBackStack()
-                                },
-                                viewModel = createTaskViewModel
-                            )
-                        }
+                            // Экран выбора исполнителей
+                            composable(Screen.CHOOSE_ASSIGNEE) {
+                                ChooseAssigneeRoute(
+                                    onBackClick = { navController.popBackStack() },
+                                    onConfirmSelection = { assignees ->
+                                        createTaskViewModel.confirmAssigneeSelection(assignees)
+                                        navController.popBackStack()
+                                    },
+                                    viewModel = createTaskViewModel
+                                )
+                            }
 
-                        // Экран выбора даты
-                        composable(Screen.CHOOSE_DATE) {
-                            ChooseDateRoute(
-                                onBackClick = { navController.popBackStack() },
-                                onConfirmSelection = { date ->
-                                    createTaskViewModel.confirmDateSelection(date)
-                                    navController.popBackStack()
-                                },
-                                viewModel = createTaskViewModel
-                            )
-                        }
+                            // Экран выбора проекта
+                            composable(Screen.CHOOSE_PROJECT) {
+                                ChooseProjectRoute(
+                                    onBackClick = { navController.popBackStack() },
+                                    onConfirmSelection = { project ->
+                                        createTaskViewModel.confirmProjectSelection(project)
+                                        navController.popBackStack()
+                                    },
+                                    viewModel = createTaskViewModel
+                                )
+                            }
 
-
+                            // Экран выбора даты
+                            composable(Screen.CHOOSE_DATE) {
+                                ChooseDateRoute(
+                                    onBackClick = { navController.popBackStack() },
+                                    onConfirmSelection = { date ->
+                                        createTaskViewModel.confirmDateSelection(date)
+                                        navController.popBackStack()
+                                    },
+                                    viewModel = createTaskViewModel
+                                )
+                            }
                     }
                 } else {
                     AuthRoute(onAuthSuccess = { isAuthenticated = true })
-                }
-                if (showDeleteConfirmation) {
-                    AlertDialog(
-                        onDismissRequest = {
-                            showDeleteConfirmation = false
-                        },
-                        title = {
-                            Text("Удаление задачи")
-                        },
-                        text = {
-                            Text("Вы действительно хотите удалить эту задачу?")
-                        },
-                        confirmButton = {
-                            TextButton(
-                                onClick = {
-                                    showDeleteConfirmation = false
-
-                                    android.widget.Toast.makeText(
-                                        this@MainActivity,
-                                        "хихи, я не удалю",
-                                        android.widget.Toast.LENGTH_LONG
-                                    ).show()
-                                }
-                            ) {
-                                Text("Удалить точно")
-                            }
-                        },
-                        dismissButton = {
-                            TextButton(
-                                onClick = {
-                                    showDeleteConfirmation = false
-                                }
-                            ) {
-                                Text("Отмена")
-                            }
-                        }
-                    )
                 }
             }
         }

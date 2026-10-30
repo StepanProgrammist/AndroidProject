@@ -1,6 +1,4 @@
-
 package com.example.coflow.ui.tasks
-
 import android.widget.Toast
 import androidx.activity.compose.BackHandler
 import androidx.compose.foundation.background
@@ -18,7 +16,9 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.getValue
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalFocusManager
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.input.ImeAction
@@ -27,19 +27,12 @@ import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
-import androidx.compose.runtime.LaunchedEffect
-import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableStateOf
-import androidx.compose.runtime.remember
-import androidx.compose.runtime.setValue
-import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.SavedStateHandle
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.example.coflow.R
-import com.example.coflow.data.Task
 import com.example.coflow.ui.components.CoFlowGlassTextField
 import com.example.coflow.ui.components.CoFlowScreenHeader
 import com.example.coflow.ui.theme.CoFlowSpacing
@@ -152,8 +145,6 @@ fun EditTaskScreen(
                 Spacer(modifier = Modifier.size(4.dp))
             }
 
-            // Интерфейс передаёт действия наружу и сам не работает с БД.
-
             // Новые кнопки редактирования располагаются рядом.
             Row(
                 modifier = Modifier
@@ -180,133 +171,95 @@ fun EditTaskScreen(
                     modifier = Modifier.weight(1f)
                 )
             }
-
         }
     }
 }
 
-
 @Composable
 fun EditTaskRoute(
-    task: Task,
-    savedStateHandle: SavedStateHandle,
-    onBackClick: () -> Unit,
+    onNavigateBack: () -> Unit,
+    onTaskSaved: (Task) -> Unit,
+    onTaskDeleted: (Int) -> Unit,
     onNavigateToAssignees: () -> Unit,
     onNavigateToProject: () -> Unit,
-    onNavigateToDate: () -> Unit
+    onNavigateToDate: () -> Unit,
+    viewModel: EditTaskViewModel = viewModel()
 ) {
+    val state by viewModel.state.collectAsStateWithLifecycle()
+    val deleteConfirmText = stringResource(R.string.edit_task_delete_confirm)
     val context = LocalContext.current
-    val editViewModel: EditTaskViewModel = viewModel()
-    val state by editViewModel.state.collectAsStateWithLifecycle()
-    var showDeleteConfirmation by remember { mutableStateOf(false) }
-
-    LaunchedEffect(task.id) {
-        editViewModel.loadTask(task)
-    }
-
-    // Получаем выбранную дату
-    LaunchedEffect(savedStateHandle) {
-        savedStateHandle
-            .getStateFlow<String?>("selected_task_date", null)
-            .collect { selectedDate ->
-                if (selectedDate != null) {
-                    editViewModel.onDueDateChange(selectedDate)
-                    savedStateHandle.set("selected_task_date", null)
-                }
-            }
-    }
-
-// Получаем выбранный проект
-    LaunchedEffect(savedStateHandle) {
-        savedStateHandle
-            .getStateFlow<String?>("selected_task_project", null)
-            .collect { selectedProject ->
-                if (selectedProject != null) {
-                    editViewModel.onProjectChange(selectedProject)
-                    savedStateHandle.set("selected_task_project", null)
-                }
-            }
-    }
-
-// Получаем выбранных исполнителей
-    LaunchedEffect(savedStateHandle) {
-        savedStateHandle
-            .getStateFlow<Array<String>?>("selected_task_assignees", null)
-            .collect { selectedAssignees ->
-                if (selectedAssignees != null) {
-                    editViewModel.onAssigneesChange(
-                        selectedAssignees.joinToString(", ")
-                    )
-                    savedStateHandle.set("selected_task_assignees", null)
-                }
-            }
-    }
 
     EditTaskScreen(
         state = state,
-        onBackClick = onBackClick,
-        onSaveClick = {
-            val updatedTask = editViewModel.buildUpdatedTask(task)
-
-            if (updatedTask != null) {
-                TasksTestData.updateTask(updatedTask)
-                Toast.makeText(
-                    context,
-                    context.getString(R.string.edit_task_saved),
-                    Toast.LENGTH_SHORT
-                ).show()
-                onBackClick()
-            } else {
-                Toast.makeText(
-                    context,
-                    context.getString(R.string.edit_task_invalid_date),
-                    Toast.LENGTH_SHORT
-                ).show()
-            }
-        },
-        onDeleteClick = {
-            showDeleteConfirmation = true
-        },
+        onBackClick = onNavigateBack,
+        onSaveClick = { viewModel.onSaveTask(onTaskSaved) },
+        onDeleteClick = { viewModel.showDeleteDialog() },
         onNavigateToAssignees = onNavigateToAssignees,
         onNavigateToProject = onNavigateToProject,
         onNavigateToDate = onNavigateToDate,
-        onTitleChange = editViewModel::onTitleChange,
-        onDescriptionChange = editViewModel::onDescriptionChange,
-        onAssigneesChange = editViewModel::onAssigneesChange,
-        onProjectChange = editViewModel::onProjectChange,
-        onDueDateChange = editViewModel::onDueDateChange
+        onTitleChange = viewModel::onTitleChange,
+        onDescriptionChange = viewModel::onDescriptionChange,
+        onAssigneesChange = viewModel::onAssigneesChange,
+        onProjectChange = viewModel::onProjectChange,
+        onDueDateChange = viewModel::onDueDateChange
     )
 
-    if (showDeleteConfirmation) {
+    if (state.showDeleteDialog) {
         AlertDialog(
-            onDismissRequest = {
-                showDeleteConfirmation = false
-            },
-            title = {
-                Text(stringResource(R.string.edit_task_delete_dialog_title))            },
-            text = {
-                Text(stringResource(R.string.edit_task_delete_dialog_message))            },
+            onDismissRequest = { viewModel.hideDeleteDialog() },
+            title = { Text(stringResource(R.string.edit_task_delete_dialog_title)) },
+            text = { Text(stringResource(R.string.edit_task_delete_dialog_message)) },
             confirmButton = {
                 TextButton(
                     onClick = {
-                        showDeleteConfirmation = false
-                        Toast.makeText(
-                            context,
-                            "хихи, я не удалю",
-                            Toast.LENGTH_LONG
-                        ).show()
+                        viewModel.confirmDelete { taskId ->
+                            Toast.makeText(
+                                context,
+                                deleteConfirmText,
+                                Toast.LENGTH_SHORT
+                            ).show()
+                            onTaskDeleted(taskId)
+                        }
                     }
                 ) {
-                    Text(stringResource(R.string.edit_task_delete_confirm))                }
+                    Text(stringResource(R.string.edit_task_delete_confirm))
+                }
             },
             dismissButton = {
-                TextButton(
-                    onClick = {
-                        showDeleteConfirmation = false
-                    }
-                ) {
-                    Text(stringResource(R.string.edit_task_delete_cancel))                }
+                TextButton(onClick = { viewModel.hideDeleteDialog() }) {
+                    Text(stringResource(R.string.edit_task_delete_cancel))
+                }
             }
+        )
+    }
+}
+
+// Заглушка для получения задачи по ID
+private fun getMockTask(taskId: Int): Task {
+    return when (taskId) {
+        1 -> Task(
+            id = taskId,
+            title = "Обновить иконки в навигации",
+            description = "",
+            assignees = emptyList(),
+            projectName = "Дизайн-система",
+            dueDate = "30.10.26"
+        )
+        3 -> Task(
+            id = taskId,
+            title = "Разработать новый онбординг для пользователей",
+            description = "Нужно сделать 3 экрана с анимацией и кнопкой пропуска.",
+            assignees = listOf("Мария Иванова", "Ты"),
+            projectName = "Мобильное приложение",
+            dueDate = "24.10.26"
+        )
+        else -> Task(
+            id = taskId,
+            title = "Провести ревью кода модуля авторизации",
+            description = "Все замечания исправлены, код утвержден.",
+            assignees = listOf("Ты"),
+            projectName = "Бэкенд",
+            dueDate = "20.10.26"
         )
     }
 }
