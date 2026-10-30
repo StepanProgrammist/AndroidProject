@@ -16,7 +16,7 @@ data class Task(
     val assignees: List<String>,
     val projectName: String,
     val dueDate: String,
-    val status: TaskStatusUi = TaskStatusUi.TODO
+    val status: TaskStatusUi = TaskStatusUi.TODO,
 )
 
 data class EditTaskUiState(
@@ -27,13 +27,12 @@ data class EditTaskUiState(
     val project: String = "",
     val dueDate: String = "",
     val canSave: Boolean = false,
-    val showDeleteDialog: Boolean = false // <-- Добавлено для управления диалогом из ViewModel
+    val showDeleteDialog: Boolean = false, // <-- Добавлено для управления диалогом из ViewModel
 )
 
 class EditTaskViewModel(
-    private val savedStateHandle: SavedStateHandle
+    private val savedStateHandle: SavedStateHandle,
 ) : ViewModel() {
-
     private val _state = MutableStateFlow(EditTaskUiState())
     val state: StateFlow<EditTaskUiState> = _state.asStateFlow()
 
@@ -45,16 +44,17 @@ class EditTaskViewModel(
 
     private fun loadTask(taskId: Int) {
         val mockTask = getMockTask(taskId)
-        _state.value = EditTaskUiState(
-            taskId = mockTask.id,
-            title = mockTask.title,
-            description = mockTask.description,
-            assignees = mockTask.assignees.joinToString(", "),
-            project = mockTask.projectName,
-            dueDate = mockTask.dueDate,
-            canSave = true,
-            showDeleteDialog = false
-        )
+        _state.value =
+            EditTaskUiState(
+                taskId = mockTask.id,
+                title = mockTask.title,
+                description = mockTask.description,
+                assignees = mockTask.assignees.joinToString(", "),
+                project = mockTask.projectName,
+                dueDate = mockTask.dueDate,
+                canSave = true,
+                showDeleteDialog = false,
+            )
     }
 
     fun onTitleChange(newTitle: String) {
@@ -80,15 +80,20 @@ class EditTaskViewModel(
     // Аналог onCreateTask из CreateTaskViewModel
     fun onSaveTask(onTaskSaved: (Task) -> Unit) {
         val currentState = _state.value
-        val updatedTask = Task(
-            id = currentState.taskId,
-            title = currentState.title,
-            description = currentState.description,
-            assignees = currentState.assignees.split(", ").map { it.trim() }.filter { it.isNotBlank() },
-            projectName = currentState.project,
-            dueDate = currentState.dueDate,
-            status = TaskStatusUi.TODO // Или сохраняем старый статус
-        )
+        val updatedTask =
+            Task(
+                id = currentState.taskId,
+                title = currentState.title,
+                description = currentState.description,
+                assignees =
+                    currentState.assignees
+                        .split(", ")
+                        .map { it.trim() }
+                        .filter { it.isNotBlank() },
+                projectName = currentState.project,
+                dueDate = currentState.dueDate,
+                status = TaskStatusUi.TODO, // Или сохраняем старый статус
+            )
         onTaskSaved(updatedTask)
     }
 
@@ -99,6 +104,7 @@ class EditTaskViewModel(
     fun hideDeleteDialog() {
         _state.update { it.copy(showDeleteDialog = false) }
     }
+
     fun confirmDelete(onTaskDeleted: (Int) -> Unit) {
         onTaskDeleted(_state.value.taskId)
         hideDeleteDialog()
@@ -106,10 +112,24 @@ class EditTaskViewModel(
 }
 
 // Заглушка для получения задачи по ID (можно вынести в отдельный файл TestData)
-private fun getMockTask(taskId: Int): Task {
-    return when (taskId) {
-        1 -> Task(1, "Обновить иконки в навигации", "", emptyList(), "Дизайн-система", "30.10.26")
-        3 -> Task(3, "Разработать новый онбординг", "Нужно сделать 3 экрана.", listOf("Мария Иванова", "Ты"), "Мобильное приложение", "24.10.26")
-        else -> Task(taskId, "Провести ревью кода", "Все замечания исправлены.", listOf("Ты"), "Бэкенд", "20.10.26")
+private fun getMockTask(taskId: Int): Task =
+    when (taskId) {
+        1 -> {
+            Task(1, "Обновить иконки в навигации", "", emptyList(), "Дизайн-система", "30.10.26")
+        }
+
+        3 -> {
+            Task(
+                3,
+                "Разработать новый онбординг",
+                "Нужно сделать 3 экрана.",
+                listOf("Мария Иванова", "Ты"),
+                "Мобильное приложение",
+                "24.10.26",
+            )
+        }
+
+        else -> {
+            Task(taskId, "Провести ревью кода", "Все замечания исправлены.", listOf("Ты"), "Бэкенд", "20.10.26")
+        }
     }
-}
