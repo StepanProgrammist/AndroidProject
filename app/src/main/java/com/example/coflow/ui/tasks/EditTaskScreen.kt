@@ -2,10 +2,10 @@ package com.example.coflow.ui.tasks
 import android.widget.Toast
 import androidx.activity.compose.BackHandler
 import androidx.compose.foundation.background
-import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
@@ -14,7 +14,12 @@ import androidx.compose.foundation.layout.navigationBarsPadding
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.text.KeyboardActions
+import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.foundation.verticalScroll
+import androidx.compose.material3.AlertDialog
+import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Modifier
@@ -22,23 +27,18 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalFocusManager
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.input.ImeAction
-import androidx.compose.foundation.text.KeyboardActions
-import androidx.compose.foundation.text.KeyboardOptions
-import androidx.compose.material3.AlertDialog
-import androidx.compose.material3.Text
-import androidx.compose.material3.TextButton
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.SavedStateHandle
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.example.coflow.R
+import com.example.coflow.ui.components.CoFlowEditDeleteButton
+import com.example.coflow.ui.components.CoFlowEditSaveButton
 import com.example.coflow.ui.components.CoFlowGlassTextField
 import com.example.coflow.ui.components.CoFlowScreenHeader
 import com.example.coflow.ui.theme.CoFlowSpacing
 import com.example.coflow.ui.theme.coFlowTasksBackgroundBrush
-import com.example.coflow.ui.components.CoFlowEditSaveButton
-import com.example.coflow.ui.components.CoFlowEditDeleteButton
 import kotlin.collections.joinToString
 
 @Composable
@@ -62,38 +62,41 @@ fun EditTaskScreen(
     BackHandler(onBack = onBackClick)
 
     Box(
-        modifier = Modifier
-            .fillMaxSize()
-            .background(coFlowTasksBackgroundBrush())
+        modifier =
+            Modifier
+                .fillMaxSize()
+                .background(coFlowTasksBackgroundBrush()),
     ) {
         Column(
-            modifier = Modifier
-                .fillMaxSize()
-                .navigationBarsPadding()
-                .imePadding()
-                .padding(horizontal = CoFlowSpacing.ScreenHorizontal)
+            modifier =
+                Modifier
+                    .fillMaxSize()
+                    .navigationBarsPadding()
+                    .imePadding()
+                    .padding(horizontal = CoFlowSpacing.ScreenHorizontal),
         ) {
             CoFlowScreenHeader(
                 title = stringResource(R.string.edit_task_header),
                 onBackClick = {
                     focusManager.clearFocus()
                     onBackClick()
-                }
+                },
             )
 
             // Поля формы прокручиваются, а кнопки остаются внизу экрана.
             Column(
-                modifier = Modifier
-                    .weight(1f)
-                    .fillMaxWidth()
-                    .verticalScroll(rememberScrollState()),
-                verticalArrangement = Arrangement.spacedBy(12.dp)
+                modifier =
+                    Modifier
+                        .weight(1f)
+                        .fillMaxWidth()
+                        .verticalScroll(rememberScrollState()),
+                verticalArrangement = Arrangement.spacedBy(12.dp),
             ) {
                 CoFlowGlassTextField(
                     label = stringResource(R.string.creation_task_name_label),
                     value = state.title,
                     onValueChange = onTitleChange,
-                    placeholder = stringResource(R.string.creation_task_name_placeholder)
+                    placeholder = stringResource(R.string.creation_task_name_placeholder),
                 )
 
                 CoFlowGlassTextField(
@@ -102,7 +105,7 @@ fun EditTaskScreen(
                     onValueChange = onDescriptionChange,
                     placeholder = stringResource(R.string.creation_task_description_placeholder),
                     singleLine = false,
-                    maxLength = 250
+                    maxLength = 250,
                 )
 
                 CoFlowGlassTextField(
@@ -112,7 +115,7 @@ fun EditTaskScreen(
                     placeholder = stringResource(R.string.creation_task_assignee_placeholder),
                     leadingIcon = "person",
                     trailingIcon = "chevron",
-                    onClick = onNavigateToAssignees
+                    onClick = onNavigateToAssignees,
                 )
 
                 CoFlowGlassTextField(
@@ -122,7 +125,7 @@ fun EditTaskScreen(
                     placeholder = stringResource(R.string.creation_task_project_placeholder),
                     leadingIcon = "folder",
                     trailingIcon = "chevron",
-                    onClick = onNavigateToProject
+                    onClick = onNavigateToProject,
                 )
 
                 CoFlowGlassTextField(
@@ -133,13 +136,15 @@ fun EditTaskScreen(
                     leadingIcon = "calendar",
                     trailingIcon = "chevron",
                     onClick = onNavigateToDate,
-                    keyboardOptions = KeyboardOptions(
-                        keyboardType = KeyboardType.Text,
-                        imeAction = ImeAction.Done
-                    ),
-                    keyboardActions = KeyboardActions(
-                        onDone = { focusManager.clearFocus() }
-                    )
+                    keyboardOptions =
+                        KeyboardOptions(
+                            keyboardType = KeyboardType.Text,
+                            imeAction = ImeAction.Done,
+                        ),
+                    keyboardActions =
+                        KeyboardActions(
+                            onDone = { focusManager.clearFocus() },
+                        ),
                 )
 
                 Spacer(modifier = Modifier.size(4.dp))
@@ -147,10 +152,11 @@ fun EditTaskScreen(
 
             // Новые кнопки редактирования располагаются рядом.
             Row(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(top = 8.dp, bottom = 16.dp),
-                horizontalArrangement = Arrangement.spacedBy(12.dp)
+                modifier =
+                    Modifier
+                        .fillMaxWidth()
+                        .padding(top = 8.dp, bottom = 16.dp),
+                horizontalArrangement = Arrangement.spacedBy(12.dp),
             ) {
                 CoFlowEditSaveButton(
                     text = stringResource(R.string.edit_task_save_button),
@@ -159,7 +165,7 @@ fun EditTaskScreen(
                         onSaveClick()
                     },
                     modifier = Modifier.weight(1f),
-                    enabled = state.canSave
+                    enabled = state.canSave,
                 )
 
                 CoFlowEditDeleteButton(
@@ -168,7 +174,7 @@ fun EditTaskScreen(
                         focusManager.clearFocus()
                         onDeleteClick()
                     },
-                    modifier = Modifier.weight(1f)
+                    modifier = Modifier.weight(1f),
                 )
             }
         }
@@ -183,7 +189,7 @@ fun EditTaskRoute(
     onNavigateToAssignees: () -> Unit,
     onNavigateToProject: () -> Unit,
     onNavigateToDate: () -> Unit,
-    viewModel: EditTaskViewModel = viewModel()
+    viewModel: EditTaskViewModel = viewModel(),
 ) {
     val state by viewModel.state.collectAsStateWithLifecycle()
     val deleteConfirmText = stringResource(R.string.edit_task_delete_confirm)
@@ -201,7 +207,7 @@ fun EditTaskRoute(
         onDescriptionChange = viewModel::onDescriptionChange,
         onAssigneesChange = viewModel::onAssigneesChange,
         onProjectChange = viewModel::onProjectChange,
-        onDueDateChange = viewModel::onDueDateChange
+        onDueDateChange = viewModel::onDueDateChange,
     )
 
     if (state.showDeleteDialog) {
@@ -213,14 +219,15 @@ fun EditTaskRoute(
                 TextButton(
                     onClick = {
                         viewModel.confirmDelete { taskId ->
-                            Toast.makeText(
-                                context,
-                                deleteConfirmText,
-                                Toast.LENGTH_SHORT
-                            ).show()
+                            Toast
+                                .makeText(
+                                    context,
+                                    deleteConfirmText,
+                                    Toast.LENGTH_SHORT,
+                                ).show()
                             onTaskDeleted(taskId)
                         }
-                    }
+                    },
                 ) {
                     Text(stringResource(R.string.edit_task_delete_confirm))
                 }
@@ -229,37 +236,44 @@ fun EditTaskRoute(
                 TextButton(onClick = { viewModel.hideDeleteDialog() }) {
                     Text(stringResource(R.string.edit_task_delete_cancel))
                 }
-            }
+            },
         )
     }
 }
 
 // Заглушка для получения задачи по ID
-private fun getMockTask(taskId: Int): Task {
-    return when (taskId) {
-        1 -> Task(
-            id = taskId,
-            title = "Обновить иконки в навигации",
-            description = "",
-            assignees = emptyList(),
-            projectName = "Дизайн-система",
-            dueDate = "30.10.26"
-        )
-        3 -> Task(
-            id = taskId,
-            title = "Разработать новый онбординг для пользователей",
-            description = "Нужно сделать 3 экрана с анимацией и кнопкой пропуска.",
-            assignees = listOf("Мария Иванова", "Ты"),
-            projectName = "Мобильное приложение",
-            dueDate = "24.10.26"
-        )
-        else -> Task(
-            id = taskId,
-            title = "Провести ревью кода модуля авторизации",
-            description = "Все замечания исправлены, код утвержден.",
-            assignees = listOf("Ты"),
-            projectName = "Бэкенд",
-            dueDate = "20.10.26"
-        )
+private fun getMockTask(taskId: Int): Task =
+    when (taskId) {
+        1 -> {
+            Task(
+                id = taskId,
+                title = "Обновить иконки в навигации",
+                description = "",
+                assignees = emptyList(),
+                projectName = "Дизайн-система",
+                dueDate = "30.10.26",
+            )
+        }
+
+        3 -> {
+            Task(
+                id = taskId,
+                title = "Разработать новый онбординг для пользователей",
+                description = "Нужно сделать 3 экрана с анимацией и кнопкой пропуска.",
+                assignees = listOf("Мария Иванова", "Ты"),
+                projectName = "Мобильное приложение",
+                dueDate = "24.10.26",
+            )
+        }
+
+        else -> {
+            Task(
+                id = taskId,
+                title = "Провести ревью кода модуля авторизации",
+                description = "Все замечания исправлены, код утвержден.",
+                assignees = listOf("Ты"),
+                projectName = "Бэкенд",
+                dueDate = "20.10.26",
+            )
+        }
     }
-}
