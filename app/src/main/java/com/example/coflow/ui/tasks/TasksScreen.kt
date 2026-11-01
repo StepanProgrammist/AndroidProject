@@ -431,7 +431,13 @@ private fun GlassFilterOption(
                     ),
             contentAlignment = Alignment.Center,
         ) {
-            if (selected) Text("✓", fontSize = 10.sp, color = Color.White)
+            if (selected) {
+                CoFlowIcon(
+                    name = "check",
+                    modifier = Modifier.size(10.dp),
+                    color = Color.White
+                )
+            }
         }
         Spacer(Modifier.width(9.dp))
         Text(text = title, fontSize = 13.sp, color = CoFlowColors.TextPrimary, maxLines = 1)

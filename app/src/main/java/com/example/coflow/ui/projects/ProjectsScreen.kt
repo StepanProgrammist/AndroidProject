@@ -2,6 +2,7 @@ package com.example.coflow.ui.projects
 
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.foundation.BorderStroke
+import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
@@ -16,8 +17,10 @@ import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
@@ -287,8 +290,21 @@ private fun GlassControlSurface(modifier: Modifier = Modifier, content: @Composa
 @Composable
 private fun GlassFilterOption(title: String, selected: Boolean, onClick: () -> Unit) {
     Row(modifier = Modifier.padding(horizontal = 6.dp, vertical = 2.dp).fillMaxWidth().clip(RoundedCornerShape(12.dp)).background(if (selected) CoFlowColors.BlueLight.copy(alpha = 0.14f) else Color.Transparent).clickable(onClick = onClick).padding(horizontal = 10.dp, vertical = 9.dp), verticalAlignment = Alignment.CenterVertically) {
-        Box(modifier = Modifier.size(16.dp).clip(RoundedCornerShape(5.dp)).background(if (selected) CoFlowColors.Blue else Color.Transparent).border(width = 1.dp, color = if (selected) CoFlowColors.Blue else CoFlowGlassStyles.BlueBorder, shape = RoundedCornerShape(5.dp)), contentAlignment = Alignment.Center) {
-            if (selected) Text("✓", fontSize = 10.sp, color = Color.White)
+        Canvas(modifier = Modifier.size(10.dp)) {
+            if (selected) {
+                drawCircle(
+                    brush =
+                        Brush.linearGradient(
+                            colors = listOf(Color(0xFF6EA5FF), CoFlowColors.Blue),
+                            start = Offset.Zero,
+                            end =
+                                androidx.compose.ui.geometry
+                                    .Offset(size.width, size.height),
+                        ),
+                )
+            } else {
+                drawCircle(color = CoFlowGlassStyles.BlueBorder, style = Stroke(width = 1.2.dp.toPx()))
+            }
         }
         Spacer(Modifier.width(9.dp))
         Text(text = title, fontSize = 13.sp, color = CoFlowColors.TextPrimary, maxLines = 1)
