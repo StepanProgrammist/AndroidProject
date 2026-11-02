@@ -92,6 +92,16 @@
     <string name="notification_message">Интерфейс уведомлений ещё не реализован.</string>
     <string name="dialog_ok">Понятно</string>
 
+    <!-- Строка для подтверждения действия с задачей -->
+    <string name="task_action_confirm_take">Взять задачу?</string>
+    <string name="task_action_confirm_complete">Завершить задачу?</string>
+    <string name="task_action_taken">Вы успешно взяли задачу</string>
+    <string name="task_action_completed">Задача выполнена успешно</string>
+    <string name="task_action_button_take">Взять</string>
+    <string name="task_action_button_complete">Выполнить</string>
+    <string name="task_action_button_cancel">Отмена</string>
+
+
     <!-- Навигация -->
     <string name="navigation_tasks">Мои задачи</string>
     <string name="navigation_projects">Проекты</string>
@@ -116,14 +126,14 @@
 
     <plurals name="selected_assignees_count">
         <item quantity="one">Выбран %d исполнитель</item>
-        <item quantity="few">Выбрано %d исполнителя</item>
+        <item quantity="few">Выбрано %d исполнитель</item>
         <item quantity="many">Выбрано %d исполнителей</item>
         <item quantity="other">Выбрано %d исполнителей</item>
     </plurals>
 
     <!-- Описание задачи-->
     <string name="description_header">Описание</string>
-    <string name="description_placeholder">Описание отсутстсвует</string>
+    <string name="description_placeholder">Описание отсутствует</string>
 
     <string name="author_header">Автор задачи</string>
     <string name="author_placeholder">Неизвестно</string>
@@ -133,8 +143,8 @@
     <plurals name="task_selected_assignees_count">
         <item quantity="one">Вы и ещё %d участник</item>
         <item quantity="few">Вы и ещё %d участника</item>
-        <item quantity="many">Вы и ещё %d участников</item>
-        <item quantity="other">Вы и ещё %d участников</item>
+        <item quantity="many">Вы и ещё %d участника</item>
+        <item quantity="other">Вы и ещё %d участника</item>
     </plurals>
 
     <string name="deadline_header">Дата окончания</string>

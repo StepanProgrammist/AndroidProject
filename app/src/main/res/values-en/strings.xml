@@ -94,6 +94,15 @@
         <string name="notification_message">Notifications interface not implemented yet.</string>
         <string name="dialog_ok">Got it</string>
 
+        <!-- Строка для подтверждения действия с задачей -->
+        <string name="task_action_confirm_take">Take task?</string>
+        <string name="task_action_confirm_complete">Complete task?</string>
+        <string name="task_action_taken">Task taken successfully</string>
+        <string name="task_action_completed">Task completed successfully</string>
+        <string name="task_action_button_take">Take</string>
+        <string name="task_action_button_complete">Complete</string>
+        <string name="task_action_button_cancel">Cancel</string>
+
         <!-- Навигация -->
         <string name="navigation_tasks">My tasks</string>
         <string name="navigation_projects">Projects</string>
