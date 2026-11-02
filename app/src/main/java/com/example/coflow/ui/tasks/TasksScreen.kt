@@ -2,6 +2,7 @@ package com.example.coflow.ui.tasks
 
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.foundation.BorderStroke
+import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
@@ -24,6 +25,8 @@ import androidx.compose.foundation.layout.widthIn
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
+import androidx.compose.material3.AlertDialog
+import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.ArrowDownward
 import androidx.compose.material.icons.filled.Check
@@ -33,6 +36,12 @@ import androidx.compose.material3.Icon
 import androidx.compose.material3.SnackbarHost
 import androidx.compose.material3.SnackbarHostState
 import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
+import androidx.compose.runtime.Composable
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
@@ -46,6 +55,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.clipToBounds
+import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.graphicsLayer
@@ -54,137 +64,98 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
+import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import androidx.lifecycle.viewmodel.compose.viewModel
 import com.example.coflow.R
-import com.example.coflow.data.Task
-import com.example.coflow.data.TasksTestData
 import com.example.coflow.models.TaskStatus
 import com.example.coflow.ui.components.CoFlowBottomNavigationBar
 import com.example.coflow.ui.components.CoFlowFabButton
 import com.example.coflow.ui.components.CoFlowGlassCard
+import com.example.coflow.ui.components.CoFlowIcon
 import com.example.coflow.ui.components.CoFlowScreenHeader
 import com.example.coflow.ui.components.NavItem
 import com.example.coflow.ui.components.NotificationBell
 import com.example.coflow.ui.theme.CoFlowColors
 import com.example.coflow.ui.theme.CoFlowGlassStyles
 import com.example.coflow.ui.theme.CoFlowSpacing
+import com.example.coflow.ui.theme.CoFlowTheme
 import com.example.coflow.ui.theme.coFlowTasksBackgroundBrush
 import kotlinx.coroutines.launch
-import java.time.LocalDate
-import java.time.format.DateTimeFormatter
 
-private enum class TaskGrouping { STATUS, DEADLINE }
-
-private data class TaskGroup(
-    val id: String,
-    val title: String,
-    val tasks: List<Task>,
-)
 
 @Composable
 fun TasksScreen(
+    state: TasksUiState,
     onNavigateToCreateTask: () -> Unit,
-    onNavigateToTaskDetail: (Int) -> Unit,
+    onNavigateToTaskDetail: (String) -> Unit,
+    onGroupingChange: (TaskGrouping) -> Unit,
+    onFilterToggle: (TaskFilterItem) -> Unit,
+    onToggleGroup: (String) -> Unit,
     onNavigateToProjects: () -> Unit,
+    onNavigateToProfile: () -> Unit,
+    onClearError: () -> Unit,
 ) {
-    var grouping by remember { mutableStateOf(TaskGrouping.STATUS) }
-    var selectedFilters by remember { mutableStateOf(setOf<String>()) }
-    var collapsedGroups by remember { mutableStateOf(setOf("IN_PROGRESS")) }
-
-    var pendingTask by remember { mutableStateOf<Task?>(null) }
-
-    val snackbarHostState = remember { SnackbarHostState() }
-    val coroutineScope = rememberCoroutineScope()
-
-    var snackbarColor by remember {
-        mutableStateOf(Color(0xFF2860D9))
-    }
-
     val scrollState = rememberScrollState()
-    var previousScroll by remember { mutableStateOf(0) }
-    var bottomVisible by remember { mutableStateOf(true) }
 
-    LaunchedEffect(scrollState.value) {
-        val current = scrollState.value
-        if (current > previousScroll + 2) {
-            bottomVisible = false
-        } else if (current < previousScroll - 2) {
-            bottomVisible = true
-        }
-        previousScroll = current
-    }
-
-    val today = LocalDate.now()
-    val filterNoneText = stringResource(R.string.filter_none)
-    val filteredTasks =
-        TasksTestData.tasks.filter { task ->
-            if (selectedFilters.isEmpty() || selectedFilters.contains(filterNoneText)) {
-                true
-            } else {
-                val isMineSelected = selectedFilters.contains(stringResource(R.string.filter_mine))
-                val projectFilters = selectedFilters.filter { it.startsWith("Проект") }
-                (isMineSelected && task.isMine) || projectFilters.any { task.projectName == it }
-            }
-        }
-
-    val groups =
-        when (grouping) {
-            TaskGrouping.STATUS -> {
-                listOf(
-                    TaskGroup("TODO", stringResource(R.string.tasks_group_planned), filteredTasks.filter { it.status == TaskStatus.TODO }),
-                    TaskGroup(
-                        "IN_PROGRESS",
-                        stringResource(R.string.tasks_group_active),
-                        filteredTasks.filter { it.status == TaskStatus.IN_PROGRESS },
-                    ),
-                    TaskGroup(
-                        "DONE",
-                        stringResource(R.string.tasks_group_completed),
-                        filteredTasks.filter { it.status == TaskStatus.DONE },
-                    ),
-                )
-            }
-
-            TaskGrouping.DEADLINE -> {
-                listOf(
-                    TaskGroup(
-                        "TODAY",
-                        stringResource(R.string.tasks_group_today),
-                        filteredTasks.filter { it.dueDate == today }.sortedBy { it.dueDate },
-                    ),
-                    TaskGroup(
-                        "THIS_WEEK",
-                        stringResource(R.string.tasks_group_this_week),
-                        filteredTasks
-                            .filter {
-                                it.dueDate.isAfter(today) &&
-                                    !it.dueDate.isAfter(today.plusDays(6))
-                            }.sortedBy { it.dueDate },
-                    ),
-                    TaskGroup(
-                        "NEXT_WEEK",
-                        stringResource(R.string.tasks_group_next_week),
-                        filteredTasks
-                            .filter {
-                                it.dueDate.isAfter(today.plusDays(6)) &&
-                                    !it.dueDate.isAfter(today.plusDays(13))
-                            }.sortedBy { it.dueDate },
-                    ),
-                )
-            }
-        }
-
-    val completedCount = filteredTasks.count { it.status == TaskStatus.DONE }
-    val activeCount = filteredTasks.size - completedCount
-
+    // Собираем текст кнопки фильтра из ресурсов
     val filterButtonText =
-        when {
-            selectedFilters.isEmpty() || selectedFilters.contains(filterNoneText) -> filterNoneText
-            selectedFilters.size == 1 -> selectedFilters.first()
-            else -> "Выбрано: ${selectedFilters.size}"
+        if (state.selectedFilters.isEmpty()) {
+            stringResource(R.string.filter_none)
+        } else {
+            state.selectedFilters
+                .mapNotNull { id ->
+                    val item = state.availableFilters.find { it.id == id }
+                    when (item?.type) {
+                        FilterType.MINE -> stringResource(R.string.filter_mine)
+                        FilterType.PROJECT -> item.title
+                        else -> null
+                    }
+                }.joinToString(", ")
         }
 
+    // Показ ошибки (строковая или ресурсная)
+    val errorText =
+        when {
+            state.errorMessageResId != null && state.errorMessage != null -> {
+                stringResource(state.errorMessageResId, state.errorMessage)
+            }
+
+            state.errorMessageResId != null -> {
+                stringResource(state.errorMessageResId)
+            }
+
+            else -> {
+                state.errorMessage
+            }
+        }
+
+    if (errorText != null) {
+        AlertDialog(
+            onDismissRequest = onClearError,
+            title = { Text(stringResource(R.string.error_title), color = CoFlowColors.Error) },
+            text = { Text(errorText) },
+            confirmButton = {
+                TextButton(onClick = onClearError) {
+                    Text(stringResource(R.string.ok_button), color = CoFlowColors.Blue)
+                }
+            },
+        )
+    }
+    Box(
+        modifier =
+            Modifier
+                .fillMaxSize()
+                .background(coFlowTasksBackgroundBrush()),
+    ) {
+        Column(
+            modifier =
+                Modifier
+                    .fillMaxSize()
+                    .padding(horizontal = CoFlowSpacing.ScreenHorizontal),
+        ) {
     val takeMessage = stringResource(R.string.task_action_taken)
     val completeMessage = stringResource(R.string.task_action_completed)
 
@@ -192,9 +163,11 @@ fun TasksScreen(
         Column(modifier = Modifier.fillMaxSize().padding(horizontal = CoFlowSpacing.ScreenHorizontal)) {
             CoFlowScreenHeader(
                 title = stringResource(R.string.my_tasks_header),
-                subtitle = "$activeCount ${stringResource(
-                    R.string.my_tasks_active,
-                )} · $completedCount ${stringResource(R.string.my_tasks_completed)}",
+                subtitle = "${state.activeCount} ${
+                    stringResource(
+                        R.string.my_tasks_active,
+                    )
+                } · ${state.completedCount} ${stringResource(R.string.my_tasks_completed)}",
                 trailingContent = {
                     NotificationBell()
                 },
@@ -202,139 +175,132 @@ fun TasksScreen(
 
             Spacer(Modifier.height(16.dp))
 
-            Column(
-                modifier =
-                    Modifier
-                        .weight(1f)
-                        .padding(bottom = 8.dp)
-                        .clipToBounds()
-                        .verticalScroll(scrollState),
-                verticalArrangement = Arrangement.spacedBy(10.dp),
-            ) {
-                groups.forEach { group ->
-                    TaskGroupCard(
-                        group = group,
-                        expanded = group.id !in collapsedGroups,
-                        onToggle = {
-                            collapsedGroups =
-                                if (group.id in collapsedGroups) {
-                                    collapsedGroups - group.id
-                                } else {
-                                    collapsedGroups + group.id
-                                }
-                        },
-                        onTaskClick = { task ->
-                            onNavigateToTaskDetail(task.id)
-                        },
-                        onTaskSwipe = { task ->
-                            pendingTask = task
-                        },
-                    )
+            if (state.isLoading) {
+                Box(
+                    modifier = Modifier.weight(1f).fillMaxWidth(),
+                    contentAlignment = Alignment.Center,
+                ) {
+                    CircularProgressIndicator(color = CoFlowColors.Blue)
                 }
-                Spacer(Modifier.height(18.dp))
+            } else {
+                Column(
+                    modifier =
+                        Modifier
+                            .weight(1f)
+                            .padding(bottom = 8.dp)
+                            .clipToBounds()
+                            .verticalScroll(scrollState),
+                    verticalArrangement = Arrangement.spacedBy(10.dp),
+                ) {
+                    state.groups.forEach { group ->
+                        TaskGroupCard(
+                            group = group,
+                            onToggle = { onToggleGroup(group.id) },
+                            onTaskClick = { task -> onNavigateToTaskDetail(task.id) },
+                        )
+                    }
+                    Spacer(Modifier.height(18.dp))
 
-                pendingTask?.let { task ->
-                    val isTakingTask = task.status == TaskStatus.TODO
+                    pendingTask?.let { task ->
+                        val isTakingTask = task.status == TaskStatus.TODO
 
-                    AlertDialog(
-                        onDismissRequest = {
-                            pendingTask = null
-                        },
-                        title = {
-                            Text(
-                                text =
-                                    stringResource(
-                                        if (isTakingTask) {
-                                            R.string.task_action_confirm_take
-                                        } else {
-                                            R.string.task_action_confirm_complete
-                                        },
-                                    ),
-                            )
-                        },
-                        confirmButton = {
-                            TextButton(
-                                onClick = {
-                                    val snackbarMessage =
-                                        if (isTakingTask) {
-                                            takeMessage
-                                        } else {
-                                            completeMessage
-                                        }
-
-                                    snackbarColor =
-                                        if (isTakingTask) {
-                                            Color(0xFF2860D9)
-                                        } else {
-                                            Color(0xFF20A65A)
-                                        }
-
-                                    pendingTask = null
-
-                                    coroutineScope.launch {
-                                        snackbarHostState.showSnackbar(message = snackbarMessage)
-                                    }
-                                },
-                            ) {
+                        AlertDialog(
+                            onDismissRequest = {
+                                pendingTask = null
+                            },
+                            title = {
                                 Text(
                                     text =
                                         stringResource(
                                             if (isTakingTask) {
-                                                R.string.task_action_button_take
+                                                R.string.task_action_confirm_take
                                             } else {
-                                                R.string.task_action_button_complete
+                                                R.string.task_action_confirm_complete
                                             },
                                         ),
                                 )
-                            }
-                        },
-                        dismissButton = {
-                            TextButton(
-                                onClick = {
-                                    pendingTask = null
-                                },
-                            ) {
-                                Text(
-                                    text = stringResource(R.string.task_action_button_cancel),
-                                )
-                            }
-                        },
-                    )
+                            },
+                            confirmButton = {
+                                TextButton(
+                                    onClick = {
+                                        val snackbarMessage =
+                                            if (isTakingTask) {
+                                                takeMessage
+                                            } else {
+                                                completeMessage
+                                            }
+
+                                        snackbarColor =
+                                            if (isTakingTask) {
+                                                Color(0xFF2860D9)
+                                            } else {
+                                                Color(0xFF20A65A)
+                                            }
+
+                                        pendingTask = null
+
+                                        coroutineScope.launch {
+                                            snackbarHostState.showSnackbar(message = snackbarMessage)
+                                        }
+                                    },
+                                ) {
+                                    Text(
+                                        text =
+                                            stringResource(
+                                                if (isTakingTask) {
+                                                    R.string.task_action_button_take
+                                                } else {
+                                                    R.string.task_action_button_complete
+                                                },
+                                            ),
+                                    )
+                                }
+                            },
+                            dismissButton = {
+                                TextButton(
+                                    onClick = {
+                                        pendingTask = null
+                                    },
+                                ) {
+                                    Text(
+                                        text = stringResource(R.string.task_action_button_cancel),
+                                    )
+                                }
+                            },
+                        )
+                    }
                 }
             }
 
-            AnimatedVisibility(visible = bottomVisible) {
+            AnimatedVisibility(visible = state.isBottomBarVisible) {
                 Column(
                     modifier =
-                        Modifier.fillMaxWidth().padding(
-                            bottom = WindowInsets.navigationBars.asPaddingValues().calculateBottomPadding() + 2.dp,
-                        ),
+                        Modifier
+                            .fillMaxWidth()
+                            .padding(
+                                bottom =
+                                    WindowInsets.navigationBars
+                                        .asPaddingValues()
+                                        .calculateBottomPadding() + 2.dp,
+                            ),
                     horizontalAlignment = Alignment.CenterHorizontally,
                 ) {
                     Row(
-                        modifier = Modifier.widthIn(max = 330.dp).fillMaxWidth(),
+                        modifier =
+                            Modifier
+                                .widthIn(max = 330.dp)
+                                .fillMaxWidth(),
                         horizontalArrangement = Arrangement.Center,
                         verticalAlignment = Alignment.CenterVertically,
                     ) {
                         SortFilterPanel(
                             modifier = Modifier.weight(1f),
-                            grouping = grouping,
-                            onGroupingChange = { newGrouping ->
-                                grouping = newGrouping
-                                collapsedGroups = emptySet()
-                            },
-                            selectedFilters = selectedFilters,
+                            grouping = state.currentGrouping,
+                            onGroupingChange = onGroupingChange,
                             filterButtonText = filterButtonText,
-                            onFilterToggle = { option ->
-                                if (option == filterNoneText) {
-                                    selectedFilters = setOf(filterNoneText)
-                                } else {
-                                    val newSet = selectedFilters.toMutableSet()
-                                    newSet.remove(filterNoneText)
-                                    if (newSet.contains(option)) newSet.remove(option) else newSet.add(option)
-                                    selectedFilters = newSet.toSet()
-                                }
-                            },
+                            onFilterToggle = onFilterToggle,
+                            selectedFilters = state.selectedFilters,
+                            availableFilters = state.availableFilters,
                         )
                         Spacer(Modifier.width(16.dp))
 
@@ -345,7 +311,12 @@ fun TasksScreen(
                     CoFlowBottomNavigationBar(
                         items =
                             listOf(
-                                NavItem(icon = "tasks", title = stringResource(R.string.navigation_tasks), selected = true, onClick = {}),
+                                NavItem(
+                                    icon = "tasks",
+                                    title = stringResource(R.string.navigation_tasks),
+                                    selected = true,
+                                    onClick = {},
+                                ),
                                 NavItem(
                                     icon = "folder",
                                     title = stringResource(R.string.navigation_projects),
@@ -356,7 +327,7 @@ fun TasksScreen(
                                     icon = "person",
                                     title = stringResource(R.string.navigation_profile),
                                     selected = false,
-                                    onClick = { /* TODO: профиль */ },
+                                    onClick = {},
                                 ),
                             ),
                     )
@@ -400,33 +371,55 @@ fun TasksScreen(
 
 @Composable
 private fun TaskGroupCard(
-    group: TaskGroup,
-    expanded: Boolean,
+    group: TaskGroupUi,
     onToggle: () -> Unit,
-    onTaskClick: (Task) -> Unit,
-    onTaskSwipe: (Task) -> Unit,
+    onTaskClick: (TaskRowUi) -> Unit,
 ) {
-    CoFlowGlassCard(modifier = Modifier.fillMaxWidth().clickable(onClick = onToggle)) {
+    CoFlowGlassCard(
+        modifier =
+            Modifier
+                .fillMaxWidth()
+                .clickable(onClick = onToggle),
+    ) {
         Row(modifier = Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
-            Text(text = group.title, fontSize = 13.sp, fontWeight = FontWeight.SemiBold, color = CoFlowColors.TextPrimary)
+            Text(
+                text = stringResource(group.titleResId),
+                fontSize = 13.sp,
+                fontWeight = FontWeight.SemiBold,
+                color = CoFlowColors.TextPrimary,
+            )
             Spacer(Modifier.width(7.dp))
             Box(
                 modifier =
                     Modifier
-                        .clip(RoundedCornerShape(5.dp))
-                        .background(CoFlowColors.BlueLight.copy(alpha = 0.38f))
+                        .clip(
+                            RoundedCornerShape(5.dp),
+                        ).background(CoFlowColors.BlueLight.copy(alpha = 0.38f))
                         .padding(horizontal = 5.dp, vertical = 2.dp),
             ) {
-                Text(text = group.tasks.size.toString(), fontSize = 10.sp, fontWeight = FontWeight.Medium, color = CoFlowColors.Blue)
+                Text(
+                    text = group.tasks.size.toString(),
+                    fontSize = 10.sp,
+                    fontWeight = FontWeight.Medium,
+                    color = CoFlowColors.Blue,
+                )
             }
             Spacer(Modifier.weight(1f))
-            Text(text = if (expanded) "⌄" else "›", color = CoFlowColors.Blue, fontSize = 17.sp)
+            CoFlowIcon(
+                name = if (group.isExpanded) "chevron_up" else "chevron",
+                modifier = Modifier.size(18.dp),
+                color = CoFlowColors.Blue,
+            )
         }
 
-        if (expanded) {
+        if (group.isExpanded) {
             if (group.tasks.isEmpty()) {
                 Spacer(Modifier.height(8.dp))
-                Text(text = "Нет задач", fontSize = 11.sp, color = CoFlowColors.TextSecondary)
+                Text(
+                    text = stringResource(R.string.no_tasks_placeholder),
+                    fontSize = 11.sp,
+                    color = CoFlowColors.TextSecondary,
+                )
             } else {
                 Spacer(Modifier.height(3.dp))
                 group.tasks.forEachIndexed { index, task ->
@@ -436,7 +429,13 @@ private fun TaskGroupCard(
                         onSwipe = onTaskSwipe,
                     )
                     if (index < group.tasks.lastIndex) {
-                        Box(modifier = Modifier.fillMaxWidth().height(1.dp).background(CoFlowGlassStyles.BlueBorder.copy(alpha = 0.45f)))
+                        Box(
+                            modifier =
+                                Modifier
+                                    .fillMaxWidth()
+                                    .height(1.dp)
+                                    .background(CoFlowGlassStyles.BlueBorder.copy(alpha = 0.45f)),
+                        )
                     }
                 }
             }
@@ -446,7 +445,7 @@ private fun TaskGroupCard(
 
 @Composable
 private fun TaskRow(
-    task: Task,
+    task: TaskRowUi,
     onClick: () -> Unit,
     onSwipe: (Task) -> Unit,
 ) {
@@ -535,76 +534,50 @@ private fun TaskRow(
             }
         }
 
-        Column(
-            modifier =
-                Modifier
-                    .fillMaxWidth()
-                    .graphicsLayer {
-                        translationX = offsetX
-                    }.clip(RoundedCornerShape(10.dp))
-                    .background(CoFlowColors.White)
-                    .clickable { onClick() }
-                    .padding(vertical = 6.dp),
+    Column(
+        modifier =
+            Modifier
+                .fillMaxWidth()
+                .padding(vertical = 6.dp)
+                .clickable { onClick() },
+    ) {
+        Row(modifier = Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
+            Text(
+                text = task.title,
+                fontSize = 12.sp,
+                fontWeight = FontWeight.Medium,
+                color = if (task.isDone) CoFlowColors.TextSecondary else CoFlowColors.TextPrimary,
+                maxLines = 1,
+                overflow = TextOverflow.Ellipsis,
+                modifier = Modifier.weight(1f),
+            )
+            if (task.isOverdue) {
+                Spacer(Modifier.width(4.dp))
+                Text(
+                    text = stringResource(R.string.task_outdated),
+                    fontSize = 8.sp,
+                    color = CoFlowColors.Error,
+                )
+            }
+        }
+        Spacer(Modifier.height(3.dp))
+        Row(
+            modifier = Modifier.fillMaxWidth(),
+            horizontalArrangement = Arrangement.SpaceBetween,
+            verticalAlignment = Alignment.CenterVertically,
         ) {
-            Row(
-                modifier =
-                    Modifier
-                        .fillMaxWidth()
-                        .padding(horizontal = 2.dp),
-                verticalAlignment = Alignment.CenterVertically,
-            ) {
-                Text(
-                    text = task.title,
-                    fontSize = 12.sp,
-                    fontWeight = FontWeight.Medium,
-                    color = CoFlowColors.TextPrimary,
-                    maxLines = 1,
-                    overflow = TextOverflow.Ellipsis,
-                    modifier = Modifier.weight(1f),
-                )
-
-                if (task.dueDate.isBefore(LocalDate.now()) &&
-                    task.status != TaskStatus.DONE
-                ) {
-                    Spacer(Modifier.width(4.dp))
-                    Text(
-                        text = stringResource(R.string.task_outdated),
-                        fontSize = 8.sp,
-                        color = CoFlowColors.Error,
-                    )
-                }
-            }
-
-            Spacer(Modifier.height(3.dp))
-
-            Row(
-                modifier =
-                    Modifier
-                        .fillMaxWidth()
-                        .padding(horizontal = 2.dp),
-                horizontalArrangement = Arrangement.SpaceBetween,
-                verticalAlignment = Alignment.CenterVertically,
-            ) {
-                Text(
-                    text = task.projectName,
-                    fontSize = 10.sp,
-                    color = CoFlowColors.TextSecondary,
-                    maxLines = 1,
-                )
-
-                Text(
-                    text =
-                        task.dueDate.format(
-                            DateTimeFormatter.ofPattern("dd.MM.yy"),
-                        ),
-                    fontSize = 10.sp,
-                    color = CoFlowColors.TextSecondary,
-                )
-            }
+            Text(
+                text = task.projectName,
+                fontSize = 10.sp,
+                color = CoFlowColors.TextSecondary,
+                maxLines = 1,
+            )
+            Text(text = task.dueDateFormatted, fontSize = 10.sp, color = CoFlowColors.TextSecondary)
         }
     }
 }
 
+// --- Внутренние компоненты для панели фильтров ---
 @Composable
 private fun SortFilterPanel(
     modifier: Modifier = Modifier,
@@ -612,19 +585,35 @@ private fun SortFilterPanel(
     onGroupingChange: (TaskGrouping) -> Unit,
     selectedFilters: Set<String>,
     filterButtonText: String,
-    onFilterToggle: (String) -> Unit,
+    onFilterToggle: (TaskFilterItem) -> Unit,
+    availableFilters: List<TaskFilterItem>,
 ) {
-    Row(modifier = modifier, horizontalArrangement = Arrangement.spacedBy(7.dp), verticalAlignment = Alignment.CenterVertically) {
+    Row(
+        modifier = modifier,
+        horizontalArrangement = Arrangement.spacedBy(7.dp),
+        verticalAlignment = Alignment.CenterVertically,
+    ) {
         Box(modifier = Modifier.weight(1f)) {
             var expanded by remember { mutableStateOf(false) }
-            GlassControlSurface(modifier = Modifier.fillMaxWidth().clickable { expanded = true }) {
+            GlassControlSurface(
+                modifier =
+                    Modifier
+                        .fillMaxWidth()
+                        .clickable { expanded = true },
+            ) {
                 Column {
-                    Text(text = stringResource(R.string.grouping_header), fontSize = 9.sp, color = CoFlowColors.TextSecondary)
+                    Text(
+                        text = stringResource(R.string.grouping_header),
+                        fontSize = 9.sp,
+                        color = CoFlowColors.TextSecondary,
+                    )
                     Spacer(Modifier.height(3.dp))
                     Row(verticalAlignment = Alignment.CenterVertically) {
                         Text(
                             text =
-                                if (grouping == TaskGrouping.STATUS) {
+                                if (grouping ==
+                                    TaskGrouping.STATUS
+                                ) {
                                     stringResource(R.string.grouping_status)
                                 } else {
                                     stringResource(R.string.grouping_deadline)
@@ -633,8 +622,11 @@ private fun SortFilterPanel(
                             color = CoFlowColors.TextPrimary,
                             maxLines = 1,
                         )
-                        Spacer(Modifier.width(3.dp))
-                        Text("⌄", fontSize = 11.sp, color = CoFlowColors.Blue)
+                        CoFlowIcon(
+                            name = "chevron_down",
+                            modifier = Modifier.size(14.dp),
+                            color = CoFlowColors.Blue,
+                        )
                     }
                 }
             }
@@ -643,28 +635,53 @@ private fun SortFilterPanel(
                 onDismissRequest = {
                     expanded = false
                 },
-                shape = RoundedCornerShape(16.dp),
-                containerColor = Color(0xFFF4F8FF).copy(alpha = 0.62f),
+                shape =
+                    RoundedCornerShape(
+                        16.dp,
+                    ),
+                containerColor =
+                    Color(
+                        0xFFF4F8FF,
+                    ).copy(
+                        alpha = 0.62f,
+                    ),
                 tonalElevation = 0.dp,
                 shadowElevation = 0.dp,
                 border = BorderStroke(1.dp, Color.White.copy(alpha = 0.82f)),
             ) {
-                GlassGroupingOption(title = stringResource(R.string.grouping_status), selected = grouping == TaskGrouping.STATUS) {
+                GlassGroupingOption(
+                    title = stringResource(R.string.grouping_status),
+                    selected = grouping == TaskGrouping.STATUS,
+                ) {
                     onGroupingChange(TaskGrouping.STATUS)
-                    expanded = false
+                    expanded =
+                        false
                 }
-                GlassGroupingOption(title = stringResource(R.string.grouping_deadline), selected = grouping == TaskGrouping.DEADLINE) {
+                GlassGroupingOption(
+                    title = stringResource(R.string.grouping_deadline),
+                    selected = grouping == TaskGrouping.DEADLINE,
+                ) {
                     onGroupingChange(TaskGrouping.DEADLINE)
-                    expanded = false
+                    expanded =
+                        false
                 }
             }
         }
 
         Box(modifier = Modifier.weight(1f)) {
             var expanded by remember { mutableStateOf(false) }
-            GlassControlSurface(modifier = Modifier.fillMaxWidth().clickable { expanded = true }) {
+            GlassControlSurface(
+                modifier =
+                    Modifier
+                        .fillMaxWidth()
+                        .clickable { expanded = true },
+            ) {
                 Column {
-                    Text(text = stringResource(R.string.filter_header), fontSize = 9.sp, color = CoFlowColors.TextSecondary)
+                    Text(
+                        text = stringResource(R.string.filter_header),
+                        fontSize = 9.sp,
+                        color = CoFlowColors.TextSecondary,
+                    )
                     Spacer(Modifier.height(3.dp))
                     Row(verticalAlignment = Alignment.CenterVertically) {
                         Text(
@@ -676,7 +693,11 @@ private fun SortFilterPanel(
                             modifier = Modifier.weight(1f, fill = false),
                         )
                         Spacer(Modifier.width(3.dp))
-                        Text("⌄", fontSize = 11.sp, color = CoFlowColors.Blue)
+                        CoFlowIcon(
+                            name = "chevron_down",
+                            modifier = Modifier.size(14.dp),
+                            color = CoFlowColors.Blue,
+                        )
                     }
                 }
             }
@@ -685,20 +706,38 @@ private fun SortFilterPanel(
                 onDismissRequest = {
                     expanded = false
                 },
-                shape = RoundedCornerShape(16.dp),
-                containerColor = Color(0xFFF4F8FF).copy(alpha = 0.62f),
+                shape =
+                    RoundedCornerShape(
+                        16.dp,
+                    ),
+                containerColor =
+                    Color(
+                        0xFFF4F8FF,
+                    ).copy(
+                        alpha = 1f,
+                    ),
                 tonalElevation = 0.dp,
                 shadowElevation = 0.dp,
                 border = BorderStroke(1.dp, Color.White.copy(alpha = 0.82f)),
             ) {
-                listOf(
-                    stringResource(R.string.filter_none),
-                    stringResource(R.string.filter_mine),
-                    "Проект 1",
-                    "Проект 2",
-                    "Проект 3",
-                ).forEach { option ->
-                    GlassFilterOption(title = option, selected = selectedFilters.contains(option)) { onFilterToggle(option) }
+                availableFilters.forEach { item ->
+                    val displayName =
+                        when (item.type) {
+                            FilterType.NONE -> stringResource(R.string.filter_none)
+                            FilterType.MINE -> stringResource(R.string.filter_mine)
+                            FilterType.PROJECT -> item.title
+                        }
+                    val isSelected =
+                        if (item.type == FilterType.NONE) {
+                            selectedFilters.isEmpty()
+                        } else {
+                            selectedFilters.contains(item.id)
+                        }
+
+                    GlassFilterOption(
+                        title = displayName,
+                        selected = isSelected,
+                    ) { onFilterToggle(item) }
                 }
             }
         }
@@ -715,10 +754,24 @@ private fun GlassControlSurface(
             modifier
                 .clip(RoundedCornerShape(13.dp))
                 .background(
-                    brush = Brush.verticalGradient(colors = listOf(Color.White.copy(alpha = 0.30f), Color(0xFFDDEAFF).copy(alpha = 0.16f))),
+                    brush =
+                        Brush.verticalGradient(
+                            colors =
+                                listOf(
+                                    Color.White.copy(alpha = 0.30f),
+                                    Color(0xFFDDEAFF).copy(alpha = 0.16f),
+                                ),
+                        ),
                 ).border(
                     width = 1.dp,
-                    brush = Brush.verticalGradient(colors = listOf(Color.White.copy(alpha = 0.92f), CoFlowColors.Blue.copy(alpha = 0.14f))),
+                    brush =
+                        Brush.verticalGradient(
+                            colors =
+                                listOf(
+                                    Color.White.copy(alpha = 0.92f),
+                                    CoFlowColors.Blue.copy(alpha = 0.14f),
+                                ),
+                        ),
                     shape = RoundedCornerShape(13.dp),
                 ).padding(horizontal = 9.dp, vertical = 7.dp),
     ) { content() }
@@ -733,29 +786,39 @@ private fun GlassGroupingOption(
     Row(
         modifier =
             Modifier
-                .padding(horizontal = 6.dp, vertical = 2.dp)
-                .fillMaxWidth()
-                .clip(RoundedCornerShape(12.dp))
-                .background(if (selected) CoFlowColors.BlueLight.copy(alpha = 0.14f) else Color.Transparent)
-                .clickable(onClick = onClick)
-                .padding(horizontal = 12.dp, vertical = 8.dp),
+                .padding(
+                    horizontal = 6.dp,
+                    vertical = 2.dp,
+                ).fillMaxWidth()
+                .clip(
+                    RoundedCornerShape(12.dp),
+                ).background(
+                    if (selected) CoFlowColors.BlueLight.copy(alpha = 0.14f) else Color.Transparent,
+                ).clickable(onClick = onClick)
+                .padding(horizontal = 10.dp, vertical = 9.dp),
         verticalAlignment = Alignment.CenterVertically,
-        horizontalArrangement = Arrangement.SpaceBetween,
     ) {
-        Text(
-            text = title,
-            fontSize = 12.sp,
-            color = if (selected) CoFlowColors.Blue else CoFlowColors.TextPrimary,
-            fontWeight = if (selected) FontWeight.SemiBold else FontWeight.Normal,
-        )
-        if (selected) {
-            Icon(
-                imageVector = Icons.Default.Check,
-                contentDescription = null,
-                modifier = Modifier.size(16.dp),
-                tint = CoFlowColors.Blue,
-            )
+        Canvas(modifier = Modifier.size(10.dp)) {
+            if (selected) {
+                drawCircle(
+                    brush =
+                        Brush.linearGradient(
+                            colors = listOf(Color(0xFF6EA5FF), CoFlowColors.Blue),
+                            start = Offset.Zero,
+                            end =
+                                androidx.compose.ui.geometry
+                                    .Offset(size.width, size.height),
+                        ),
+                )
+            } else {
+                drawCircle(
+                    color = CoFlowGlassStyles.BlueBorder,
+                    style = Stroke(width = 1.2.dp.toPx()),
+                )
+            }
         }
+        Spacer(Modifier.width(9.dp))
+        Text(text = title, fontSize = 13.sp, color = CoFlowColors.TextPrimary, maxLines = 1)
     }
 }
 
@@ -768,20 +831,175 @@ private fun GlassFilterOption(
     Row(
         modifier =
             Modifier
-                .padding(horizontal = 6.dp, vertical = 2.dp)
-                .fillMaxWidth()
-                .clip(RoundedCornerShape(12.dp))
-                .background(if (selected) CoFlowColors.BlueLight.copy(alpha = 0.14f) else Color.Transparent)
-                .clickable(onClick = onClick)
-                .padding(horizontal = 12.dp, vertical = 8.dp),
+                .padding(
+                    horizontal = 6.dp,
+                    vertical = 2.dp,
+                ).fillMaxWidth()
+                .clip(
+                    RoundedCornerShape(12.dp),
+                ).background(
+                    if (selected) CoFlowColors.BlueLight.copy(alpha = 0.14f) else Color.Transparent,
+                ).clickable(onClick = onClick)
+                .padding(horizontal = 10.dp, vertical = 9.dp),
         verticalAlignment = Alignment.CenterVertically,
-        horizontalArrangement = Arrangement.SpaceBetween,
     ) {
-        Text(
-            text = title,
-            fontSize = 12.sp,
-            color = if (selected) CoFlowColors.Blue else CoFlowColors.TextPrimary,
-            fontWeight = if (selected) FontWeight.SemiBold else FontWeight.Normal,
+        Box(
+            modifier =
+                Modifier
+                    .size(
+                        16.dp,
+                    ).clip(
+                        RoundedCornerShape(5.dp),
+                    ).background(
+                        if (selected) CoFlowColors.Blue else Color.Transparent,
+                    ).border(
+                        width = 1.dp,
+                        color = if (selected) CoFlowColors.Blue else CoFlowGlassStyles.BlueBorder,
+                        shape = RoundedCornerShape(5.dp),
+                    ),
+            contentAlignment = Alignment.Center,
+        ) {
+            if (selected) {
+                CoFlowIcon(
+                    name = "check",
+                    modifier = Modifier.size(10.dp),
+                    color = Color.White,
+                )
+            }
+        }
+        Spacer(Modifier.width(9.dp))
+        Text(text = title, fontSize = 13.sp, color = CoFlowColors.TextPrimary, maxLines = 1)
+    }
+}
+
+@Composable
+fun TasksRoute(
+    viewModel: TasksScreenViewModel = viewModel(),
+    onNavigateToCreateTask: () -> Unit,
+    onNavigateToTaskDetail: (String) -> Unit,
+    onNavigateToProjects: () -> Unit,
+    onNavigateToProfile: () -> Unit,
+) {
+    // Подписываемся на изменения состояния с учетом жизненного цикла
+    val state by viewModel.uiState.collectAsStateWithLifecycle()
+
+    TasksScreen(
+        state = state,
+        onNavigateToCreateTask = onNavigateToCreateTask,
+        onNavigateToTaskDetail = onNavigateToTaskDetail,
+        onGroupingChange = viewModel::onGroupingChange,
+        onFilterToggle = viewModel::onFilterToggle,
+        onToggleGroup = viewModel::onToggleGroup,
+        onNavigateToProjects = onNavigateToProjects,
+        onNavigateToProfile = onNavigateToProfile,
+        onClearError = viewModel::clearError,
+    )
+}
+
+@Preview(name = "По статусу (Обычное)", showBackground = true, widthDp = 390, heightDp = 844)
+@Composable
+fun TasksScreen_Default_Preview() {
+    CoFlowTheme {
+        TasksScreen(
+            state =
+                TasksUiState(
+                    activeCount = 5,
+                    completedCount = 12,
+                    groups =
+                        listOf(
+                            TaskGroupUi(
+                                id = "TODO",
+                                titleResId = R.string.tasks_group_planned,
+                                count = 2,
+                                isExpanded = true,
+                                tasks =
+                                    listOf(
+                                        TaskRowUi(
+                                            "1",
+                                            "Обновить иконки навигации",
+                                            "project_1",
+                                            "Дизайн-система",
+                                            "user_1",
+                                            "user_1",
+                                            "30.10.26",
+                                            TaskStatus.TODO,
+                                            isDone = false,
+                                            isOverdue = false,
+                                        ),
+                                        TaskRowUi(
+                                            "2",
+                                            "Согласовать ТЗ с заказчиком",
+                                            "project_1",
+                                            "Сайт",
+                                            "user_2",
+                                            "user_1",
+                                            "01.11.26",
+                                            TaskStatus.TODO,
+                                            isDone = false,
+                                            isOverdue = false,
+                                        ),
+                                    ),
+                            ),
+                            TaskGroupUi(
+                                id = "IN_PROGRESS",
+                                titleResId = R.string.tasks_group_active,
+                                count = 3,
+                                isExpanded = false,
+                                tasks =
+                                    listOf(
+                                        TaskRowUi(
+                                            "3",
+                                            "Разработать онбординг",
+                                            "project_1",
+                                            "Мобильное приложение",
+                                            "user_1",
+                                            "user_3",
+                                            "24.10.26",
+                                            TaskStatus.IN_PROGRESS,
+                                            isDone = false,
+                                            isOverdue = true,
+                                        ), // Просрочено!
+                                        TaskRowUi(
+                                            "4",
+                                            "Настроить CI/CD",
+                                            "project_1",
+                                            "Бэкенд",
+                                            "user_3",
+                                            "user_2",
+                                            "28.10.26",
+                                            TaskStatus.IN_PROGRESS,
+                                            isDone = false,
+                                            isOverdue = false,
+                                        ),
+                                    ),
+                            ),
+                            TaskGroupUi(
+                                id = "DONE",
+                                titleResId = R.string.tasks_group_completed,
+                                count = 12,
+                                isExpanded = false,
+                                tasks = emptyList(),
+                            ),
+                        ),
+                    currentGrouping = TaskGrouping.STATUS,
+                    availableFilters =
+                        listOf(
+                            TaskFilterItem("NONE", "", FilterType.NONE),
+                            TaskFilterItem("MINE", "", FilterType.MINE),
+                            TaskFilterItem("project_1", "Дизайн-система", FilterType.PROJECT),
+                            TaskFilterItem("project_2", "Мобильное приложение", FilterType.PROJECT),
+                        ),
+                    isBottomBarVisible = true,
+                    selectedFilters = setOf("MINE"),
+                ),
+            onNavigateToCreateTask = {},
+            onNavigateToTaskDetail = {},
+            onGroupingChange = {},
+            onFilterToggle = {},
+            onToggleGroup = {},
+            onNavigateToProjects = {},
+            onNavigateToProfile = {},
+            onClearError = {},
         )
         if (selected) {
             Icon(

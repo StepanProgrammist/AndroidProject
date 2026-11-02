@@ -12,7 +12,7 @@
         <string name="choose_date_header">Deadline</string>
         <string name="choose_assignee_header">Add assignee</string>
         <string name="task_description_header">Task</string>
-
+        <string name="edit_task_header">Edit task</string>
 
 
         <!-- Поля ввода -->
@@ -60,6 +60,9 @@
 
         <string name="add_assignee_button">Add assignees</string>
 
+        <string name="edit_task_save_button">Save changes</string>
+        <string name="edit_task_delete_button">Delete task</string>
+
         <!-- Ошибки -->
         <string name="auth_error_invalid_contact">Check email or phone format</string>
         <string name="auth_error_short_password">Minimum 8 characters</string>
@@ -67,11 +70,19 @@
         <string name="task_outdated">Expired</string>
 
         <!-- Группы -->
-        <string name="tasks_group_planned">For execution</string>
+    <string name="error_not_authorized">User not logged in</string>
+    <string name="error_load_projects">Error loading projects</string>
+    <string name="error_system">System error: %s</string>
+    <string name="error_task_id_missing">Task ID not provided</string>
+    <string name="error_prefix">Error: %s</string>
+    <string name="tasks_group_planned">For execution</string>
         <string name="tasks_group_active">In process</string>
         <string name="tasks_group_completed">Completed</string>
 
-        <string name="tasks_group_today">Today</string>
+    <string name="tasks_group_overdue">Overdue</string>
+    <string name="tasks_group_upcoming">Upcoming</string>
+    <string name="tasks_group_completed_deadline">Completed</string>
+    <string name="tasks_group_today">Today</string>
         <string name="tasks_group_this_week">This week</string>
         <string name="tasks_group_next_week">Next week</string>
 
@@ -131,6 +142,12 @@
         </plurals>
 
     <!-- Описание задачи-->
+    <string name="edit_task_saved">Task saved</string>
+    <string name="edit_task_invalid_date">Check the date</string>
+    <string name="edit_task_delete_dialog_title">Delete task</string>
+    <string name="edit_task_delete_dialog_message">Are you sure you want to delete this task?</string>
+    <string name="edit_task_delete_confirm">I am sure</string>
+    <string name="edit_task_delete_cancel">Cancel</string>
     <string name="description_header">Description</string>
     <string name="description_placeholder">No description provided</string>
 
@@ -144,5 +161,16 @@
         <item quantity="other">You and %d more assignees</item>
     </plurals>
 
+    <string name="task_description_label">Description</string>
+    <string name="task_author_label">Task author</string>
+    <string name="task_status_todo">To be done</string>
+    <string name="task_status_in_progress">In progress</string>
+    <string name="task_status_done">Done</string>
+    <string name="assignee_you">You</string>
     <string name="deadline_header">Deadline</string>
+
+    <!-- Общие сообщения -->
+    <string name="error_title">Error</string>
+    <string name="ok_button">OK</string>
+    <string name="no_tasks_placeholder">No tasks</string>
 </resources>
