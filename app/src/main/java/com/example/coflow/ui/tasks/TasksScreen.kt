@@ -5,6 +5,15 @@ import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.gestures.detectHorizontalDragGestures
+import androidx.compose.ui.input.pointer.pointerInput
+import androidx.compose.ui.graphics.graphicsLayer
+import androidx.compose.material3.AlertDialog
+import androidx.compose.material3.TextButton
+import androidx.compose.material3.SnackbarHost
+import androidx.compose.material3.SnackbarHostState
+import androidx.compose.material3.Snackbar
+import kotlinx.coroutines.launch
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
@@ -42,6 +51,17 @@ fun TasksScreen(onNavigateToCreateTask: () -> Unit, onNavigateToTaskDetail: (Int
     var grouping by remember { mutableStateOf(TaskGrouping.STATUS) }
     var selectedFilters by remember { mutableStateOf(setOf<String>()) }
     var collapsedGroups by remember { mutableStateOf(setOf("IN_PROGRESS")) }
+
+    // Задача, для которой открыто подтверждение действия
+    var pendingTask by remember { mutableStateOf<Task?>(null) }
+
+    // Состояние уведомлений
+    val snackbarHostState = remember { SnackbarHostState() }
+    val coroutineScope = rememberCoroutineScope()
+
+    var snackbarColor by remember {
+        mutableStateOf(Color(0xFF2860D9))
+    }
 
     val scrollState = rememberScrollState()
     var previousScroll by remember { mutableStateOf(0) }
@@ -87,6 +107,35 @@ fun TasksScreen(onNavigateToCreateTask: () -> Unit, onNavigateToTaskDetail: (Int
     }
 
     Box(modifier = Modifier.fillMaxSize().background(coFlowTasksBackgroundBrush())) {
+
+        //показывает уведомление сверху после действий свайпа
+            SnackbarHost(
+                hostState = snackbarHostState,
+                modifier = Modifier
+                    .align(Alignment.TopCenter)
+                    .padding(top = 6.dp),
+                snackbar = { data ->
+                    Box(
+                        modifier = Modifier
+                            .widthIn(max = 220.dp)
+                            .padding(horizontal = 8.dp)
+                            .clip(RoundedCornerShape(12.dp))
+                            .background(snackbarColor)
+                            .padding(horizontal = 14.dp, vertical = 9.dp),
+                        contentAlignment = Alignment.Center
+                    ) {
+                        Text(
+                            text = data.visuals.message,
+                            fontSize = 11.sp,
+                            fontWeight = FontWeight.Medium,
+                            color = Color.White,
+                            textAlign = androidx.compose.ui.text.style.TextAlign.Center,
+                            maxLines = 1
+                        )
+                    }
+                }
+            )
+
             Column(modifier = Modifier.fillMaxSize().padding(horizontal = CoFlowSpacing.ScreenHorizontal)) {
             // ИСПРАВЛЕНО: Единый, чистый заголовок без стрелки назад, но с подзаголовком и колокольчиком
             CoFlowScreenHeader(
@@ -107,11 +156,85 @@ fun TasksScreen(onNavigateToCreateTask: () -> Unit, onNavigateToTaskDetail: (Int
                     TaskGroupCard(
                         group = group,
                         expanded = group.id !in collapsedGroups,
-                        onToggle = { collapsedGroups = if (group.id in collapsedGroups) collapsedGroups - group.id else collapsedGroups + group.id },
-                        onTaskClick = { task -> onNavigateToTaskDetail(task.id) }
+                        onToggle = {
+                            collapsedGroups =
+                                if (group.id in collapsedGroups) {
+                                    collapsedGroups - group.id
+                                } else {
+                                    collapsedGroups + group.id
+                                }
+                        },
+                        onTaskClick = { task ->
+                            onNavigateToTaskDetail(task.id)
+                        },
+                        onTaskSwipe = { task ->
+                            pendingTask = task
+                        }
                     )
                 }
                 Spacer(Modifier.height(18.dp))
+
+                pendingTask?.let { task ->
+                    val isTakingTask = task.status == TaskStatus.TODO
+
+                    AlertDialog(
+                        onDismissRequest = {
+                            pendingTask = null
+                        },
+                        title = {
+                            Text(
+                                text = if (isTakingTask) {
+                                    "Взять задачу?"
+                                } else {
+                                    "Завершить задачу?"
+                                }
+                            )
+                        },
+                        text = {
+                            Text(
+                                text = if (isTakingTask) {
+                                    "Вы действительно хотите взять задачу «${task.title}» в работу?"
+                                } else {
+                                    "Вы действительно хотите отметить задачу «${task.title}» выполненной?"
+                                }
+                            )
+                        },
+                        confirmButton = {
+                            TextButton(
+                                onClick = {
+                                    snackbarColor = if (isTakingTask) {
+                                        Color(0xFF2860D9)
+                                    } else {
+                                        Color(0xFF20A65A)
+                                    }
+
+                                    pendingTask = null
+
+                                    coroutineScope.launch {
+                                        snackbarHostState.showSnackbar(
+                                            message = if (isTakingTask) {
+                                                "Вы успешно взяли задачу"
+                                            } else {
+                                                "Задача выполнена успешно"
+                                            }
+                                        )
+                                    }
+                                }
+                            ) {
+                                Text(if (isTakingTask) "Взять" else "Завершить")
+                            }
+                        },
+                        dismissButton = {
+                            TextButton(
+                                onClick = {
+                                    pendingTask = null
+                                }
+                            ) {
+                                Text("Отмена")
+                            }
+                        }
+                    )
+                }
             }
 
             AnimatedVisibility(visible = bottomVisible) {
@@ -155,7 +278,8 @@ fun TasksScreen(onNavigateToCreateTask: () -> Unit, onNavigateToTaskDetail: (Int
 }
 
 @Composable
-private fun TaskGroupCard(group: TaskGroup, expanded: Boolean, onToggle: () -> Unit, onTaskClick: (Task) -> Unit) {
+private fun TaskGroupCard(group: TaskGroup, expanded: Boolean, onToggle: () -> Unit, onTaskClick: (Task) -> Unit, onTaskSwipe: (Task) -> Unit
+) {
     CoFlowGlassCard(modifier = Modifier.fillMaxWidth().clickable(onClick = onToggle)) {
         Row(modifier = Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
             Text(text = group.title, fontSize = 13.sp, fontWeight = FontWeight.SemiBold, color = CoFlowColors.TextPrimary)
@@ -174,7 +298,11 @@ private fun TaskGroupCard(group: TaskGroup, expanded: Boolean, onToggle: () -> U
             } else {
                 Spacer(Modifier.height(3.dp))
                 group.tasks.forEachIndexed { index, task ->
-                    TaskRow(task = task, onClick = { onTaskClick(task) })
+                    TaskRow(
+                        task = task,
+                        onClick = { onTaskClick(task) },
+                        onSwipe = onTaskSwipe
+                    )
                     if (index < group.tasks.lastIndex) {
                         Box(modifier = Modifier.fillMaxWidth().height(1.dp).background(CoFlowGlassStyles.BlueBorder.copy(alpha = 0.45f)))
                     }
@@ -185,27 +313,190 @@ private fun TaskGroupCard(group: TaskGroup, expanded: Boolean, onToggle: () -> U
 }
 
 @Composable
-private fun TaskRow(task: Task, onClick: () -> Unit) {
-    val formatter = remember { DateTimeFormatter.ofPattern("dd.MM.yy") }
-    Column(modifier = Modifier.fillMaxWidth().padding(vertical = 6.dp).clickable { onClick() }) {
-        Row(modifier = Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
-            Text(
-                text = task.title, fontSize = 12.sp, fontWeight = FontWeight.Medium,
-                color = if (task.status == TaskStatus.DONE) CoFlowColors.TextSecondary else CoFlowColors.TextPrimary,
-                maxLines = 1, overflow = TextOverflow.Ellipsis, modifier = Modifier.weight(1f)
+private fun TaskRow(
+    task: Task,
+    onClick: () -> Unit,
+    onSwipe: (Task) -> Unit
+) {
+    var offsetX by remember(task.id) { mutableFloatStateOf(0f) }
+
+    val swipeEnabled = task.isMine && task.status != TaskStatus.DONE
+
+    val actionColor = when (task.status) {
+        TaskStatus.TODO -> Color(0xFF2860D9)
+        TaskStatus.IN_PROGRESS -> Color(0xFF20A65A)
+        else -> Color.Transparent
+    }
+
+    val density = androidx.compose.ui.platform.LocalDensity.current
+    val maxSwipe = with(density) { 64.dp.toPx() }
+    val swipeThreshold = with(density) { 42.dp.toPx() }
+
+    Box(
+        modifier = Modifier
+            .fillMaxWidth()
+            .clip(RoundedCornerShape(10.dp))
+            .background(actionColor.copy(alpha = 0.10f))
+            .then(
+                if (swipeEnabled) {
+                    Modifier.pointerInput(task.id) {
+                        detectHorizontalDragGestures(
+                            onHorizontalDrag = { change, dragAmount ->
+                                change.consume()
+
+                                if (dragAmount < 0f || offsetX < 0f) {
+                                    offsetX = (offsetX + dragAmount)
+                                        .coerceIn(-maxSwipe, 0f)
+                                }
+                            },
+                            onDragEnd = {
+                                val shouldSwipe = offsetX <= -swipeThreshold
+                                offsetX = 0f
+
+                                if (shouldSwipe) {
+                                    onSwipe(task)
+                                }
+                            },
+                            onDragCancel = {
+                                offsetX = 0f
+                            }
+                        )
+                    }
+                } else Modifier
             )
-            if (task.dueDate.isBefore(LocalDate.now()) && task.status != TaskStatus.DONE) {
-                Spacer(Modifier.width(4.dp))
-                Text(text = stringResource(R.string.task_outdated), fontSize = 8.sp, color = CoFlowColors.Error)
+    ) {
+        // Цветная область и иконка под карточкой.
+        // Иконка всегда по вертикальному центру и у правого края.
+        if (swipeEnabled) {
+            Box(
+                modifier = Modifier.matchParentSize(),
+                contentAlignment = Alignment.CenterEnd
+            ) {
+                Box(
+                    modifier = Modifier
+                        .padding(end = 8.dp)
+                        .size(52.dp)
+                        .clip(RoundedCornerShape(12.dp))
+                        .background(actionColor),
+                    contentAlignment = Alignment.Center
+                ) {
+                    if (task.status == TaskStatus.TODO) {
+                        androidx.compose.foundation.Canvas(
+                            modifier = Modifier.size(27.dp)
+                        ) {
+                            drawCircle(
+                                color = Color.White,
+                                radius = size.width * 0.16f,
+                                center = androidx.compose.ui.geometry.Offset(
+                                    size.width / 2,
+                                    size.height * 0.30f
+                                ),
+                                style = Stroke(width = 2.dp.toPx())
+                            )
+
+                            drawArc(
+                                color = Color.White,
+                                startAngle = 180f,
+                                sweepAngle = 180f,
+                                useCenter = false,
+                                topLeft = androidx.compose.ui.geometry.Offset(
+                                    size.width * 0.18f,
+                                    size.height * 0.43f
+                                ),
+                                size = androidx.compose.ui.geometry.Size(
+                                    size.width * 0.64f,
+                                    size.height * 0.48f
+                                ),
+                                style = Stroke(width = 2.dp.toPx())
+                            )
+                        }
+                    } else {
+                        Text(
+                            text = "✓",
+                            color = Color.White,
+                            fontSize = 25.sp,
+                            fontWeight = FontWeight.Normal
+                        )
+                    }
+                }
             }
         }
-        Spacer(Modifier.height(3.dp))
-        Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween, verticalAlignment = Alignment.CenterVertically) {
-            Text(text = task.projectName, fontSize = 10.sp, color = CoFlowColors.TextSecondary, maxLines = 1)
-            Text(text = task.dueDate.format(formatter), fontSize = 10.sp, color = CoFlowColors.TextSecondary)
+
+        // Вся карточка, включая рамку, двигается целиком.
+        Column(
+            modifier = Modifier
+                .fillMaxWidth()
+                .graphicsLayer {
+                    translationX = offsetX
+                }
+                .clip(RoundedCornerShape(10.dp))
+                .background(coFlowTasksBackgroundBrush())
+                .border(
+                    width = if (offsetX < -2f) 1.5.dp else 0.dp,
+                    color = actionColor,
+                    shape = RoundedCornerShape(10.dp)
+                )
+                .clickable { onClick() }
+                .padding(vertical = 6.dp)
+        ) {
+            Row(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(horizontal = 2.dp),
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                Text(
+                    text = task.title,
+                    fontSize = 12.sp,
+                    fontWeight = FontWeight.Medium,
+                    color = CoFlowColors.TextPrimary,
+                    maxLines = 1,
+                    overflow = TextOverflow.Ellipsis,
+                    modifier = Modifier.weight(1f)
+                )
+
+                if (task.dueDate.isBefore(LocalDate.now()) &&
+                    task.status != TaskStatus.DONE
+                ) {
+                    Spacer(Modifier.width(4.dp))
+                    Text(
+                        text = stringResource(R.string.task_outdated),
+                        fontSize = 8.sp,
+                        color = CoFlowColors.Error
+                    )
+                }
+            }
+
+            Spacer(Modifier.height(3.dp))
+
+            Row(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(horizontal = 2.dp),
+                horizontalArrangement = Arrangement.SpaceBetween,
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                Text(
+                    text = task.projectName,
+                    fontSize = 10.sp,
+                    color = CoFlowColors.TextSecondary,
+                    maxLines = 1
+                )
+
+                Text(
+                    text = task.dueDate.format(
+                        DateTimeFormatter.ofPattern("dd.MM.yy")
+                    ),
+                    fontSize = 10.sp,
+                    color = CoFlowColors.TextSecondary
+                )
+            }
         }
     }
 }
+
+
+
 
 // --- Внутренние компоненты для панели фильтров ---
 @Composable
