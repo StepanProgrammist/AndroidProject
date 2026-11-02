@@ -30,11 +30,9 @@ import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.ArrowDownward
 import androidx.compose.material.icons.filled.Check
-import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.DropdownMenu
 import androidx.compose.material3.Icon
 import androidx.compose.material3.SnackbarHost
-import androidx.compose.material3.SnackbarHostState
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
@@ -42,15 +40,7 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
-import androidx.compose.material3.TextButton
-import androidx.compose.runtime.Composable
-import androidx.compose.runtime.LaunchedEffect
-import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableFloatStateOf
-import androidx.compose.runtime.mutableStateOf
-import androidx.compose.runtime.remember
-import androidx.compose.runtime.rememberCoroutineScope
-import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -58,7 +48,6 @@ import androidx.compose.ui.draw.clipToBounds
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
@@ -97,8 +86,14 @@ fun TasksScreen(
     onNavigateToProjects: () -> Unit,
     onNavigateToProfile: () -> Unit,
     onClearError: () -> Unit,
+    onTaskSwipe: (TaskRowUi) -> Unit,
 ) {
     val scrollState = rememberScrollState()
+    val snackbarHostState = remember { SnackbarHostState() }
+    val coroutineScope = rememberCoroutineScope()
+
+    var pendingTask by remember { mutableStateOf<TaskRowUi?>(null) }
+    var snackbarColor by remember { mutableStateOf(Color(0xFF2860D9)) }
 
     // Собираем текст кнопки фильтра из ресурсов
     val filterButtonText =
@@ -240,7 +235,9 @@ fun TasksScreen(
                                         pendingTask = null
 
                                         coroutineScope.launch {
-                                            snackbarHostState.showSnackbar(message = snackbarMessage)
+                                            snackbarHostState.showSnackbar(
+                                                message = if (isTakingTask) takeMessage else completeMessage
+                                            )
                                         }
                                     },
                                 ) {
@@ -1010,4 +1007,17 @@ fun TasksScreen_Default_Preview() {
             )
         }
     }
+}
+
+@Composable
+fun SortFilterPanel(
+    modifier: Modifier,
+    grouping: TaskGrouping,
+    onGroupingChange: (TaskGrouping) -> Unit,
+    filterButtonText: String,
+    onFilterToggle: (TaskFilterItem) -> Unit,
+    selectedFilters: Set<String>,
+    availableFilters: List<TaskFilterItem>
+) {
+    TODO("Not yet implemented")
 }
