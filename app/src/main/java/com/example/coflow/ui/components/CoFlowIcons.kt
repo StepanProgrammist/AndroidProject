@@ -47,11 +47,19 @@ fun CoFlowIcon(
             }
             "chevron" -> {
                 val path = Path().apply { moveTo(9f * s, 5f * s); lineTo(16f * s, 12f * s); lineTo(9f * s, 19f * s) }
-                drawPath(path, color, style = stroke)
+                drawPath(path, color, style = Stroke(width = 3f * s, cap = StrokeCap.Round, join = StrokeJoin.Round))
             }
             "chevron_left" -> {
                 val path = Path().apply { moveTo(15f * s, 5f * s); lineTo(8f * s, 12f * s); lineTo(15f * s, 19f * s) }
-                drawPath(path, color, style = stroke)
+                drawPath(path, color, style = Stroke(width = 3f * s, cap = StrokeCap.Round, join = StrokeJoin.Round))
+            }
+            "chevron_down" -> {
+                val path = Path().apply { moveTo(5f * s, 9f * s); lineTo(12f * s, 16f * s); lineTo(19f * s, 9f * s) }
+                drawPath(path, color, style = Stroke(width = 3f * s, cap = StrokeCap.Round, join = StrokeJoin.Round))
+            }
+            "chevron_up" -> {
+                val path = Path().apply { moveTo(5f * s, 15f * s); lineTo(12f * s, 8f * s); lineTo(19f * s, 15f * s) }
+                drawPath(path, color, style = Stroke(width = 3f * s, cap = StrokeCap.Round, join = StrokeJoin.Round))
             }
             "person" -> {
                 drawCircle(color, radius = 3.3f * s, center = point(12f, 7f), style = stroke)
