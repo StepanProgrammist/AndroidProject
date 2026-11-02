@@ -65,13 +65,14 @@ import com.example.coflow.ui.theme.CoFlowSpacing
 import com.example.coflow.ui.theme.CoFlowTheme
 import com.example.coflow.ui.theme.coFlowTasksBackgroundBrush
 
+
 @Composable
 fun TasksScreen(
     state: TasksUiState,
     onNavigateToCreateTask: () -> Unit,
     onNavigateToTaskDetail: (String) -> Unit,
     onGroupingChange: (TaskGrouping) -> Unit,
-    onFilterToggle: (String) -> Unit,
+    onFilterToggle: (TaskFilterItem) -> Unit,
     onToggleGroup: (String) -> Unit,
     onNavigateToProjects: () -> Unit,
     onNavigateToProfile: () -> Unit,
@@ -79,11 +80,43 @@ fun TasksScreen(
 ) {
     val scrollState = rememberScrollState()
 
-    if (state.errorMessage != null) {
+    // Собираем текст кнопки фильтра из ресурсов
+    val filterButtonText =
+        if (state.selectedFilters.isEmpty()) {
+            stringResource(R.string.filter_none)
+        } else {
+            state.selectedFilters
+                .mapNotNull { id ->
+                    val item = state.availableFilters.find { it.id == id }
+                    when (item?.type) {
+                        FilterType.MINE -> stringResource(R.string.filter_mine)
+                        FilterType.PROJECT -> item.title
+                        else -> null
+                    }
+                }.joinToString(", ")
+        }
+
+    // Показ ошибки (строковая или ресурсная)
+    val errorText =
+        when {
+            state.errorMessageResId != null && state.errorMessage != null -> {
+                stringResource(state.errorMessageResId, state.errorMessage)
+            }
+
+            state.errorMessageResId != null -> {
+                stringResource(state.errorMessageResId)
+            }
+
+            else -> {
+                state.errorMessage
+            }
+        }
+
+    if (errorText != null) {
         AlertDialog(
             onDismissRequest = onClearError,
             title = { Text(stringResource(R.string.error_title), color = CoFlowColors.Error) },
-            text = { Text(state.errorMessage) },
+            text = { Text(errorText) },
             confirmButton = {
                 TextButton(onClick = onClearError) {
                     Text(stringResource(R.string.ok_button), color = CoFlowColors.Blue)
@@ -170,7 +203,7 @@ fun TasksScreen(
                             modifier = Modifier.weight(1f),
                             grouping = state.currentGrouping,
                             onGroupingChange = onGroupingChange,
-                            filterButtonText = state.filterButtonText,
+                            filterButtonText = filterButtonText,
                             onFilterToggle = onFilterToggle,
                             selectedFilters = state.selectedFilters,
                             availableFilters = state.availableFilters,
@@ -224,7 +257,7 @@ private fun TaskGroupCard(
     ) {
         Row(modifier = Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
             Text(
-                text = group.title,
+                text = stringResource(group.titleResId),
                 fontSize = 13.sp,
                 fontWeight = FontWeight.SemiBold,
                 color = CoFlowColors.TextPrimary,
@@ -336,8 +369,8 @@ private fun SortFilterPanel(
     onGroupingChange: (TaskGrouping) -> Unit,
     selectedFilters: Set<String>,
     filterButtonText: String,
-    onFilterToggle: (String) -> Unit,
-    availableFilters: List<String>,
+    onFilterToggle: (TaskFilterItem) -> Unit,
+    availableFilters: List<TaskFilterItem>,
 ) {
     Row(
         modifier = modifier,
@@ -471,11 +504,24 @@ private fun SortFilterPanel(
                 shadowElevation = 0.dp,
                 border = BorderStroke(1.dp, Color.White.copy(alpha = 0.82f)),
             ) {
-                availableFilters.forEach { option ->
+                availableFilters.forEach { item ->
+                    val displayName =
+                        when (item.type) {
+                            FilterType.NONE -> stringResource(R.string.filter_none)
+                            FilterType.MINE -> stringResource(R.string.filter_mine)
+                            FilterType.PROJECT -> item.title
+                        }
+                    val isSelected =
+                        if (item.type == FilterType.NONE) {
+                            selectedFilters.isEmpty()
+                        } else {
+                            selectedFilters.contains(item.id)
+                        }
+
                     GlassFilterOption(
-                        title = option,
-                        selected = selectedFilters.contains(option),
-                    ) { onFilterToggle(option) }
+                        title = displayName,
+                        selected = isSelected,
+                    ) { onFilterToggle(item) }
                 }
             }
         }
@@ -647,7 +693,7 @@ fun TasksScreen_Default_Preview() {
                         listOf(
                             TaskGroupUi(
                                 id = "TODO",
-                                title = "К исполнению",
+                                titleResId = R.string.tasks_group_planned,
                                 count = 2,
                                 isExpanded = true,
                                 tasks =
@@ -680,7 +726,7 @@ fun TasksScreen_Default_Preview() {
                             ),
                             TaskGroupUi(
                                 id = "IN_PROGRESS",
-                                title = "В процессе",
+                                titleResId = R.string.tasks_group_active,
                                 count = 3,
                                 isExpanded = false,
                                 tasks =
@@ -713,23 +759,22 @@ fun TasksScreen_Default_Preview() {
                             ),
                             TaskGroupUi(
                                 id = "DONE",
-                                title = "Сделано",
+                                titleResId = R.string.tasks_group_completed,
                                 count = 12,
                                 isExpanded = false,
                                 tasks = emptyList(),
                             ),
                         ),
                     currentGrouping = TaskGrouping.STATUS,
-                    filterButtonText = "Без фильтра",
                     availableFilters =
                         listOf(
-                            "Без фильтра",
-                            "Мои задачи",
-                            "Проект: Дизайн-система",
-                            "Проект: Мобильное приложение",
+                            TaskFilterItem("NONE", "", FilterType.NONE),
+                            TaskFilterItem("MINE", "", FilterType.MINE),
+                            TaskFilterItem("project_1", "Дизайн-система", FilterType.PROJECT),
+                            TaskFilterItem("project_2", "Мобильное приложение", FilterType.PROJECT),
                         ),
                     isBottomBarVisible = true,
-                    selectedFilters = setOf("Мои задачи"),
+                    selectedFilters = setOf("MINE"),
                 ),
             onNavigateToCreateTask = {},
             onNavigateToTaskDetail = {},
