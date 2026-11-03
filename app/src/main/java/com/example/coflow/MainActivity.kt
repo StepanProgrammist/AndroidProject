@@ -81,6 +81,7 @@ class MainActivity : ComponentActivity() {
                                     onNavigateToTaskDetail = { taskId -> navController.navigate("task_detail/$taskId") },
                                     onNavigateToProjects = { navController.navigateToTab(Screen.PROJECTS) },
                                     onNavigateToProfile = { },
+                                    onTaskSwipe = {},
                                 )
                             }
 

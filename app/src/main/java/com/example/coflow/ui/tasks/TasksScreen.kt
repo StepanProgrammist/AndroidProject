@@ -66,6 +66,17 @@ import com.example.coflow.ui.theme.CoFlowGlassStyles
 import com.example.coflow.ui.theme.CoFlowSpacing
 import com.example.coflow.ui.theme.CoFlowTheme
 import com.example.coflow.ui.theme.coFlowTasksBackgroundBrush
+import androidx.compose.foundation.gestures.detectHorizontalDragGestures
+import androidx.compose.ui.graphics.graphicsLayer
+import androidx.compose.ui.input.pointer.pointerInput
+import androidx.compose.ui.platform.LocalDensity
+import androidx.compose.runtime.mutableFloatStateOf
+import androidx.compose.material3.SnackbarHostState
+import androidx.compose.material3.SnackbarHost
+import androidx.compose.runtime.rememberCoroutineScope
+import kotlinx.coroutines.launch
+
+
 
 @Composable
 fun TasksScreen(
@@ -78,7 +89,17 @@ fun TasksScreen(
     onNavigateToProjects: () -> Unit,
     onNavigateToProfile: () -> Unit,
     onClearError: () -> Unit,
+    onTaskSwipe: (TaskRowUi) -> Unit,
 ) {
+    var pendingTask by remember { mutableStateOf<TaskRowUi?>(null) }
+
+    val snackbarHostState = remember { SnackbarHostState() }
+    val coroutineScope = rememberCoroutineScope()
+
+    var snackbarColor by remember {
+        mutableStateOf(Color(0xFF2860D9))
+    }
+
     val scrollState = rememberScrollState()
 
     // Собираем текст кнопки фильтра из ресурсов
@@ -173,6 +194,9 @@ fun TasksScreen(
                             group = group,
                             onToggle = { onToggleGroup(group.id) },
                             onTaskClick = { task -> onNavigateToTaskDetail(task.id) },
+                            onTaskSwipe = { task ->
+                                pendingTask = task
+                            },
                         )
                     }
                     Spacer(Modifier.height(18.dp))
@@ -241,6 +265,92 @@ fun TasksScreen(
                 }
             }
         }
+        pendingTask?.let { task ->
+            val isTakingTask = task.status == TaskStatus.TODO
+
+            AlertDialog(
+                onDismissRequest = { pendingTask = null },
+                title = {
+                    Text(
+                        if (isTakingTask) "Взять задачу?"
+                        else "Завершить задачу?"
+                    )
+                },
+                text = {
+                    Text(
+                        if (isTakingTask) {
+                            "Вы действительно хотите взять задачу «${task.title}» в работу?"
+                        } else {
+                            "Вы действительно хотите отметить задачу «${task.title}» выполненной?"
+                        }
+                    )
+                },
+                confirmButton = {
+                    TextButton(
+                        onClick = {
+                            pendingTask = null
+                            onTaskSwipe(task)
+
+                            snackbarColor = if (isTakingTask) {
+                                Color(0xFF2860D9)
+                            } else {
+                                Color(0xFF20A65A)
+                            }
+
+                            coroutineScope.launch {
+                                snackbarHostState.showSnackbar(
+                                    if (isTakingTask) {
+                                        "Вы успешно взяли задачу"
+                                    } else {
+                                        "Задача выполнена успешно"
+                                    }
+                                )
+                            }
+                        }
+                    ) {
+                        Text(if (isTakingTask) "Взять" else "Завершить")
+                    }
+                },
+                dismissButton = {
+                    TextButton(onClick = { pendingTask = null }) {
+                        Text("Отмена")
+                    }
+                }
+            )
+        }
+        SnackbarHost(
+            hostState = snackbarHostState,
+            modifier = Modifier
+                .align(Alignment.TopCenter)
+                .padding(top = 6.dp),
+            snackbar = { data ->
+                Row(
+                    modifier = Modifier
+                        .widthIn(max = 240.dp)
+                        .clip(RoundedCornerShape(12.dp))
+                        .background(snackbarColor)
+                        .padding(horizontal = 12.dp, vertical = 9.dp),
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.Center
+                ) {
+                    Text(
+                        text = if (snackbarColor == Color(0xFF20A65A)) "✓" else "●",
+                        color = Color.White,
+                        fontWeight = FontWeight.Bold
+                    )
+
+                    Spacer(Modifier.width(8.dp))
+
+                    Text(
+                        text = data.visuals.message,
+                        fontSize = 11.sp,
+                        fontWeight = FontWeight.Medium,
+                        color = Color.White,
+                        maxLines = 1
+                    )
+                }
+            }
+        )
     }
 }
 
@@ -249,6 +359,7 @@ private fun TaskGroupCard(
     group: TaskGroupUi,
     onToggle: () -> Unit,
     onTaskClick: (TaskRowUi) -> Unit,
+    onTaskSwipe: (TaskRowUi) -> Unit,
 ) {
     CoFlowGlassCard(
         modifier =
@@ -298,7 +409,11 @@ private fun TaskGroupCard(
             } else {
                 Spacer(Modifier.height(3.dp))
                 group.tasks.forEachIndexed { index, task ->
-                    TaskRow(task = task, onClick = { onTaskClick(task) })
+                    TaskRow(
+                        task = task,
+                        onClick = { onTaskClick(task) },
+                        onSwipe = { onTaskSwipe(task) }
+                    )
                     if (index < group.tasks.lastIndex) {
                         Box(
                             modifier =
@@ -314,53 +429,185 @@ private fun TaskGroupCard(
     }
 }
 
+
 @Composable
 private fun TaskRow(
     task: TaskRowUi,
     onClick: () -> Unit,
+    onSwipe: () -> Unit,
 ) {
-    Column(
-        modifier =
-            Modifier
-                .fillMaxWidth()
-                .padding(vertical = 6.dp)
-                .clickable { onClick() },
-    ) {
-        Row(modifier = Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
-            Text(
-                text = task.title,
-                fontSize = 12.sp,
-                fontWeight = FontWeight.Medium,
-                color = if (task.isDone) CoFlowColors.TextSecondary else CoFlowColors.TextPrimary,
-                maxLines = 1,
-                overflow = TextOverflow.Ellipsis,
-                modifier = Modifier.weight(1f),
+    var offsetX by remember(task.id) { mutableFloatStateOf(0f) }
+
+    val swipeEnabled = task.isMine && !task.isDone
+    val actionColor = when (task.status) {
+        TaskStatus.TODO -> Color(0xFF2860D9)
+        TaskStatus.IN_PROGRESS -> Color(0xFF20A65A)
+        else -> Color.Transparent
+    }
+
+    val density = LocalDensity.current
+    val maxSwipe = with(density) { 64.dp.toPx() }
+    val swipeThreshold = with(density) { 42.dp.toPx() }
+
+    Box(
+        modifier = Modifier
+            .fillMaxWidth()
+            .clip(RoundedCornerShape(10.dp))
+            .then(
+                if (swipeEnabled) {
+                    Modifier.pointerInput(task.id) {
+                        detectHorizontalDragGestures(
+                            onHorizontalDrag = { change, dragAmount ->
+                                change.consume()
+
+                                // Разрешаем только свайп справа налево
+                                if (dragAmount < 0f || offsetX < 0f) {
+                                    offsetX = (offsetX + dragAmount)
+                                        .coerceIn(-maxSwipe, 0f)
+                                }
+                            },
+                            onDragEnd = {
+                                val shouldSwipe = offsetX <= -swipeThreshold
+                                offsetX = 0f
+
+                                if (shouldSwipe) {
+                                    onSwipe()
+                                }
+                            },
+                            onDragCancel = {
+                                offsetX = 0f
+                            }
+                        )
+                    }
+                } else {
+                    Modifier
+                }
             )
-            if (task.isOverdue) {
-                Spacer(Modifier.width(4.dp))
+    ) {
+        // Иконка справа. Подложка карточки не меняет цвет.
+        if (swipeEnabled) {
+            Box(
+                modifier = Modifier.matchParentSize(),
+                contentAlignment = Alignment.CenterEnd
+            ) {
+                Box(
+                    modifier = Modifier
+                        .padding(end = 8.dp)
+                        .size(52.dp)
+                        .clip(RoundedCornerShape(12.dp))
+                        .background(actionColor),
+                    contentAlignment = Alignment.Center
+                ) {
+                    if (task.status == TaskStatus.TODO) {
+                        Canvas(modifier = Modifier.size(27.dp)) {
+                            drawCircle(
+                                color = Color.White,
+                                radius = size.width * 0.16f,
+                                center = Offset(
+                                    size.width / 2,
+                                    size.height * 0.30f
+                                ),
+                                style = Stroke(width = 2.dp.toPx())
+                            )
+
+                            drawArc(
+                                color = Color.White,
+                                startAngle = 180f,
+                                sweepAngle = 180f,
+                                useCenter = false,
+                                topLeft = Offset(
+                                    size.width * 0.18f,
+                                    size.height * 0.43f
+                                ),
+                                size = androidx.compose.ui.geometry.Size(
+                                    size.width * 0.64f,
+                                    size.height * 0.48f
+                                ),
+                                style = Stroke(width = 2.dp.toPx())
+                            )
+                        }
+                    } else {
+                        Text(
+                            text = "✓",
+                            color = Color.White,
+                            fontSize = 25.sp,
+                            fontWeight = FontWeight.Normal
+                        )
+                    }
+                }
+            }
+        }
+
+        // Сама карточка сдвигается, не меняя цвет и оформление.
+        Column(
+            modifier = Modifier
+                .fillMaxWidth()
+                .graphicsLayer {
+                    translationX = offsetX
+                }
+                .clip(RoundedCornerShape(10.dp))
+                .background(coFlowTasksBackgroundBrush())
+                .clickable { onClick() }
+                .padding(vertical = 6.dp)
+        ) {
+            Row(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(horizontal = 2.dp),
+                verticalAlignment = Alignment.CenterVertically
+            ) {
                 Text(
-                    text = stringResource(R.string.task_outdated),
-                    fontSize = 8.sp,
-                    color = CoFlowColors.Error,
+                    text = task.title,
+                    fontSize = 12.sp,
+                    fontWeight = FontWeight.Medium,
+                    color = if (task.isDone) {
+                        CoFlowColors.TextSecondary
+                    } else {
+                        CoFlowColors.TextPrimary
+                    },
+                    maxLines = 1,
+                    overflow = TextOverflow.Ellipsis,
+                    modifier = Modifier.weight(1f)
+                )
+
+                if (task.isOverdue) {
+                    Spacer(Modifier.width(4.dp))
+                    Text(
+                        text = stringResource(R.string.task_outdated),
+                        fontSize = 8.sp,
+                        color = CoFlowColors.Error
+                    )
+                }
+            }
+
+            Spacer(Modifier.height(3.dp))
+
+            Row(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(horizontal = 2.dp),
+                horizontalArrangement = Arrangement.SpaceBetween,
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                Text(
+                    text = task.projectName,
+                    fontSize = 10.sp,
+                    color = CoFlowColors.TextSecondary,
+                    maxLines = 1
+                )
+
+                Text(
+                    text = task.dueDateFormatted,
+                    fontSize = 10.sp,
+                    color = CoFlowColors.TextSecondary
                 )
             }
         }
-        Spacer(Modifier.height(3.dp))
-        Row(
-            modifier = Modifier.fillMaxWidth(),
-            horizontalArrangement = Arrangement.SpaceBetween,
-            verticalAlignment = Alignment.CenterVertically,
-        ) {
-            Text(
-                text = task.projectName,
-                fontSize = 10.sp,
-                color = CoFlowColors.TextSecondary,
-                maxLines = 1,
-            )
-            Text(text = task.dueDateFormatted, fontSize = 10.sp, color = CoFlowColors.TextSecondary)
-        }
     }
 }
+
+
+
 
 // --- Внутренние компоненты для панели фильтров ---
 @Composable
@@ -421,12 +668,7 @@ private fun SortFilterPanel(
                     RoundedCornerShape(
                         16.dp,
                     ),
-                containerColor =
-                    Color(
-                        0xFFF4F8FF,
-                    ).copy(
-                        alpha = 0.62f,
-                    ),
+                containerColor = Color(0xFFF4F8FF),
                 tonalElevation = 0.dp,
                 shadowElevation = 0.dp,
                 border = BorderStroke(1.dp, Color.White.copy(alpha = 0.82f)),
@@ -657,6 +899,7 @@ fun TasksRoute(
     onNavigateToTaskDetail: (String) -> Unit,
     onNavigateToProjects: () -> Unit,
     onNavigateToProfile: () -> Unit,
+    onTaskSwipe: (TaskRowUi) -> Unit,
 ) {
     // Подписываемся на изменения состояния с учетом жизненного цикла
     val state by viewModel.uiState.collectAsStateWithLifecycle()
@@ -671,6 +914,7 @@ fun TasksRoute(
         onNavigateToProjects = onNavigateToProjects,
         onNavigateToProfile = onNavigateToProfile,
         onClearError = viewModel::clearError,
+        onTaskSwipe = viewModel::onTaskSwipe,
     )
 }
 
@@ -778,6 +1022,7 @@ fun TasksScreen_Default_Preview() {
             onNavigateToProjects = {},
             onNavigateToProfile = {},
             onClearError = {},
+            onTaskSwipe = {},
         )
     }
 }
