@@ -58,6 +58,16 @@ fun CoFlowIcon(
                 val path = Path().apply { moveTo(5f * s, 21f * s); lineTo(5f * s, 18f * s); cubicTo(5f * s, 12f * s, 19f * s, 12f * s, 19f * s, 18f * s); lineTo(19f * s, 21f * s) }
                 drawPath(path, color, style = stroke)
             }
+            "person_plus" -> {
+                drawCircle(color, radius = 3.2f * s, center = point(9f, 7f), style = stroke)
+                val path = Path().apply { moveTo(3f * s, 21f * s); lineTo(3f * s, 18f * s); cubicTo(3f * s, 12.5f * s, 15f * s, 12.5f * s, 15f * s, 18f * s); lineTo(15f * s, 21f * s) }
+                drawPath(path, color, style = stroke)
+                drawLine(color, point(18f, 15f), point(18f, 21f), 2f * s, StrokeCap.Round)
+                drawLine(color, point(15f, 18f), point(21f, 18f), 2f * s, StrokeCap.Round)
+            }
+            "minus" -> {
+                drawLine(color, point(5f, 12f), point(19f, 12f), 2.4f * s, StrokeCap.Round)
+            }
             "folder" -> {
                 val path = Path().apply { moveTo(3f * s, 6f * s); lineTo(9f * s, 6f * s); lineTo(11f * s, 8f * s); lineTo(21f * s, 8f * s); lineTo(21f * s, 19f * s); lineTo(3f * s, 19f * s); close() }
                 drawPath(path, color, style = stroke)

@@ -125,6 +125,23 @@
         <item quantity="other">Выбрано %d исполнителей</item>
     </plurals>
 
+    <!-- Экран создания проекта -->
+    <string name="create_project_header">Создание проекта</string>
+    <string name="create_project_name_label">Название</string>
+    <string name="create_project_name_placeholder">Название проекта</string>
+    <string name="create_project_description_label">Описание</string>
+    <string name="create_project_description_placeholder">Описание проекта</string>
+    <string name="create_project_participants_label">Участники</string>
+    <string name="create_project_participants_title">Участники</string>
+    <string name="create_project_add_participant">Добавить участника</string>
+    <string name="create_project_button">Создать проект</string>
+    <string name="create_project_cancel">Отмена</string>
+    <string name="create_project_remove_participant">Удалить участника</string>
+    <string name="create_project_cancel_invite_dialog_title">Отмена приглашения</string>
+    <string name="create_project_cancel_invite_dialog_message">Отменить приглашение для %1$s?</string>
+    <string name="create_project_cancel_invite_confirm">Отменить</string>
+    <string name="create_project_unresolved_invites">Проект создан. Не удалось пригласить: %1$s</string>
+
     <!-- Сообщения редактирования задачи -->
     <string name="edit_task_saved">Задача сохранена</string>
     <string name="edit_task_invalid_date">Проверьте дату</string>
