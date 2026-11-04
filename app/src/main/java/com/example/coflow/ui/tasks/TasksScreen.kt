@@ -48,7 +48,7 @@ import androidx.compose.ui.draw.clipToBounds
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.input.pointer.pointerInput
+import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
@@ -72,7 +72,18 @@ import com.example.coflow.ui.theme.CoFlowGlassStyles
 import com.example.coflow.ui.theme.CoFlowSpacing
 import com.example.coflow.ui.theme.CoFlowTheme
 import com.example.coflow.ui.theme.coFlowTasksBackgroundBrush
+import androidx.compose.foundation.gestures.detectHorizontalDragGestures
+import androidx.compose.material3.Icon
+import androidx.compose.ui.graphics.graphicsLayer
+import androidx.compose.ui.input.pointer.pointerInput
+import androidx.compose.ui.platform.LocalDensity
+import androidx.compose.runtime.mutableFloatStateOf
+import androidx.compose.material3.SnackbarHostState
+import androidx.compose.material3.SnackbarHost
+import androidx.compose.runtime.rememberCoroutineScope
 import kotlinx.coroutines.launch
+
+
 
 @Composable
 fun TasksScreen(
@@ -87,12 +98,16 @@ fun TasksScreen(
     onClearError: () -> Unit,
     onTaskSwipe: (TaskRowUi) -> Unit,
 ) {
-    val scrollState = rememberScrollState()
+    var pendingTask by remember { mutableStateOf<TaskRowUi?>(null) }
+
     val snackbarHostState = remember { SnackbarHostState() }
     val coroutineScope = rememberCoroutineScope()
 
-    var pendingTask by remember { mutableStateOf<TaskRowUi?>(null) }
-    var snackbarColor by remember { mutableStateOf(Color(0xFF2860D9)) }
+    var snackbarColor by remember {
+        mutableStateOf(Color(0xFF2860D9))
+    }
+
+    val scrollState = rememberScrollState()
 
     // Собираем текст кнопки фильтра из ресурсов
     val filterButtonText =
@@ -150,160 +165,82 @@ fun TasksScreen(
                     .fillMaxSize()
                     .padding(horizontal = CoFlowSpacing.ScreenHorizontal),
         ) {
-            val takeMessage = stringResource(R.string.task_action_taken)
-            val completeMessage = stringResource(R.string.task_action_completed)
+            CoFlowScreenHeader(
+                title = stringResource(R.string.my_tasks_header),
+                subtitle = "${state.activeCount} ${
+                    stringResource(
+                        R.string.my_tasks_active,
+                    )
+                } · ${state.completedCount} ${stringResource(R.string.my_tasks_completed)}",
+                trailingContent = {
+                    NotificationBell()
+                },
+            )
 
-            Box(modifier = Modifier.fillMaxSize().background(coFlowTasksBackgroundBrush())) {
+            Spacer(Modifier.height(16.dp))
+
+            if (state.isLoading) {
+                Box(
+                    modifier = Modifier.weight(1f).fillMaxWidth(),
+                    contentAlignment = Alignment.Center,
+                ) {
+                    CircularProgressIndicator(color = CoFlowColors.Blue)
+                }
+            } else {
                 Column(
                     modifier =
                         Modifier
-                            .fillMaxSize()
-                            .padding(horizontal = CoFlowSpacing.ScreenHorizontal),
+                            .weight(1f)
+                            .padding(bottom = 8.dp)
+                            .clipToBounds()
+                            .verticalScroll(scrollState),
+                    verticalArrangement = Arrangement.spacedBy(10.dp),
                 ) {
-                    CoFlowScreenHeader(
-                        title = stringResource(R.string.my_tasks_header),
-                        subtitle = "${state.activeCount} ${
-                            stringResource(
-                                R.string.my_tasks_active,
-                            )
-                        } · ${state.completedCount} ${stringResource(R.string.my_tasks_completed)}",
-                        trailingContent = {
-                            NotificationBell()
-                        },
-                    )
-
-                    Spacer(Modifier.height(16.dp))
-
-                    if (state.isLoading) {
-                        Box(
-                            modifier = Modifier.weight(1f).fillMaxWidth(),
-                            contentAlignment = Alignment.Center,
-                        ) {
-                            CircularProgressIndicator(color = CoFlowColors.Blue)
-                        }
-                    } else {
-                        Column(
-                            modifier =
-                                Modifier
-                                    .weight(1f)
-                                    .padding(bottom = 8.dp)
-                                    .clipToBounds()
-                                    .verticalScroll(scrollState),
-                            verticalArrangement = Arrangement.spacedBy(10.dp),
-                        ) {
-                            state.groups.forEach { group ->
-                                TaskGroupCard(
-                                    group = group,
-                                    onToggle = { onToggleGroup(group.id) },
-                                    onTaskClick = { task -> onNavigateToTaskDetail(task.id) },
-                                )
-                            }
-                            Spacer(Modifier.height(18.dp))
-
-                            pendingTask?.let { task ->
-                                val isTakingTask = task.status == TaskStatus.TODO
-
-                                AlertDialog(
-                                    onDismissRequest = {
-                                        pendingTask = null
-                                    },
-                                    title = {
-                                        Text(
-                                            text =
-                                                stringResource(
-                                                    if (isTakingTask) {
-                                                        R.string.task_action_confirm_take
-                                                    } else {
-                                                        R.string.task_action_confirm_complete
-                                                    },
-                                                ),
-                                        )
-                                    },
-                                    confirmButton = {
-                                        TextButton(
-                                            onClick = {
-                                                val snackbarMessage =
-                                                    if (isTakingTask) {
-                                                        takeMessage
-                                                    } else {
-                                                        completeMessage
-                                                    }
-
-                                                snackbarColor =
-                                                    if (isTakingTask) {
-                                                        Color(0xFF2860D9)
-                                                    } else {
-                                                        Color(0xFF20A65A)
-                                                    }
-
-                                                pendingTask = null
-
-                                                coroutineScope.launch {
-                                                    snackbarHostState.showSnackbar(
-                                                        message = if (isTakingTask) takeMessage else completeMessage,
-                                                    )
-                                                }
-                                            },
-                                        ) {
-                                            Text(
-                                                text =
-                                                    stringResource(
-                                                        if (isTakingTask) {
-                                                            R.string.task_action_button_take
-                                                        } else {
-                                                            R.string.task_action_button_complete
-                                                        },
-                                                    ),
-                                            )
-                                        }
-                                    },
-                                    dismissButton = {
-                                        TextButton(
-                                            onClick = {
-                                                pendingTask = null
-                                            },
-                                        ) {
-                                            Text(
-                                                text = stringResource(R.string.task_action_button_cancel),
-                                            )
-                                        }
-                                    },
-                                )
-                            }
-                        }
+                    state.groups.forEach { group ->
+                        TaskGroupCard(
+                            group = group,
+                            onToggle = { onToggleGroup(group.id) },
+                            onTaskClick = { task -> onNavigateToTaskDetail(task.id) },
+                            onTaskSwipe = { task ->
+                                pendingTask = task
+                            },
+                        )
                     }
+                    Spacer(Modifier.height(18.dp))
+                }
+            }
 
-                    AnimatedVisibility(visible = state.isBottomBarVisible) {
-                        Column(
-                            modifier =
-                                Modifier
-                                    .fillMaxWidth()
-                                    .padding(
-                                        bottom =
-                                            WindowInsets.navigationBars
-                                                .asPaddingValues()
-                                                .calculateBottomPadding() + 2.dp,
-                                    ),
-                            horizontalAlignment = Alignment.CenterHorizontally,
-                        ) {
-                            Row(
-                                modifier =
-                                    Modifier
-                                        .widthIn(max = 330.dp)
-                                        .fillMaxWidth(),
-                                horizontalArrangement = Arrangement.Center,
-                                verticalAlignment = Alignment.CenterVertically,
-                            ) {
-                                SortFilterPanel(
-                                    modifier = Modifier.weight(1f),
-                                    grouping = state.currentGrouping,
-                                    onGroupingChange = onGroupingChange,
-                                    filterButtonText = filterButtonText,
-                                    onFilterToggle = onFilterToggle,
-                                    selectedFilters = state.selectedFilters,
-                                    availableFilters = state.availableFilters,
-                                )
-                                Spacer(Modifier.width(16.dp))
+            AnimatedVisibility(visible = state.isBottomBarVisible) {
+                Column(
+                    modifier =
+                        Modifier
+                            .fillMaxWidth()
+                            .padding(
+                                bottom =
+                                    WindowInsets.navigationBars
+                                        .asPaddingValues()
+                                        .calculateBottomPadding() + 2.dp,
+                            ),
+                    horizontalAlignment = Alignment.CenterHorizontally,
+                ) {
+                    Row(
+                        modifier =
+                            Modifier
+                                .widthIn(max = 330.dp)
+                                .fillMaxWidth(),
+                        horizontalArrangement = Arrangement.Center,
+                        verticalAlignment = Alignment.CenterVertically,
+                    ) {
+                        SortFilterPanel(
+                            modifier = Modifier.weight(1f),
+                            grouping = state.currentGrouping,
+                            onGroupingChange = onGroupingChange,
+                            filterButtonText = filterButtonText,
+                            onFilterToggle = onFilterToggle,
+                            selectedFilters = state.selectedFilters,
+                            availableFilters = state.availableFilters,
+                        )
+                        Spacer(Modifier.width(16.dp))
 
                                 CoFlowFabButton(
                                     onClick = onNavigateToCreateTask,
@@ -312,66 +249,118 @@ fun TasksScreen(
                             }
                             Spacer(Modifier.height(7.dp))
 
-                            CoFlowBottomNavigationBar(
-                                items =
-                                    listOf(
-                                        NavItem(
-                                            icon = "tasks",
-                                            title = stringResource(R.string.navigation_tasks),
-                                            selected = true,
-                                            onClick = {},
-                                        ),
-                                        NavItem(
-                                            icon = "folder",
-                                            title = stringResource(R.string.navigation_projects),
-                                            selected = false,
-                                            onClick = onNavigateToProjects,
-                                        ),
-                                        NavItem(
-                                            icon = "person",
-                                            title = stringResource(R.string.navigation_profile),
-                                            selected = false,
-                                            onClick = {},
-                                        ),
-                                    ),
-                            )
-                        }
-                    }
+                    CoFlowBottomNavigationBar(
+                        items =
+                            listOf(
+                                NavItem(
+                                    icon = "tasks",
+                                    title = stringResource(R.string.navigation_tasks),
+                                    selected = true,
+                                    onClick = {},
+                                ),
+                                NavItem(
+                                    icon = "folder",
+                                    title = stringResource(R.string.navigation_projects),
+                                    selected = false,
+                                    onClick = onNavigateToProjects,
+                                ),
+                                NavItem(
+                                    icon = "person",
+                                    title = stringResource(R.string.navigation_profile),
+                                    selected = false,
+                                    onClick = {},
+                                ),
+                            ),
+                    )
                 }
             }
-            Box(
-                modifier =
-                    Modifier
-                        .fillMaxSize()
-                        .padding(top = 45.dp, start = 16.dp, end = 16.dp),
-                contentAlignment = Alignment.TopCenter,
-            ) {
-                SnackbarHost(
-                    hostState = snackbarHostState,
-                    modifier = Modifier.padding(top = 4.dp),
-                    snackbar = { data ->
-                        Box(
-                            modifier =
-                                Modifier
-                                    .widthIn(max = 220.dp)
-                                    .clip(RoundedCornerShape(12.dp))
-                                    .background(snackbarColor)
-                                    .padding(horizontal = 14.dp, vertical = 9.dp),
-                            contentAlignment = Alignment.Center,
-                        ) {
-                            Text(
-                                text = data.visuals.message,
-                                fontSize = 11.sp,
-                                fontWeight = FontWeight.Medium,
-                                color = Color.White,
-                                textAlign = TextAlign.Center,
-                                maxLines = 1,
-                            )
-                        }
-                    },
-                )
-            }
         }
+        pendingTask?.let { task ->
+            val isTakingTask = task.status == TaskStatus.TODO
+
+            AlertDialog(
+                onDismissRequest = { pendingTask = null },
+                title = {
+                    Text(
+                        if (isTakingTask) "Взять задачу?"
+                        else "Завершить задачу?"
+                    )
+                },
+                text = {
+                    Text(
+                        if (isTakingTask) {
+                            "Вы действительно хотите взять задачу «${task.title}» в работу?"
+                        } else {
+                            "Вы действительно хотите отметить задачу «${task.title}» выполненной?"
+                        }
+                    )
+                },
+                confirmButton = {
+                    TextButton(
+                        onClick = {
+                            pendingTask = null
+                            onTaskSwipe(task)
+
+                            snackbarColor = if (isTakingTask) {
+                                Color(0xFF2860D9)
+                            } else {
+                                Color(0xFF20A65A)
+                            }
+
+                            coroutineScope.launch {
+                                snackbarHostState.showSnackbar(
+                                    if (isTakingTask) {
+                                        "Вы успешно взяли задачу"
+                                    } else {
+                                        "Задача выполнена успешно"
+                                    }
+                                )
+                            }
+                        }
+                    ) {
+                        Text(if (isTakingTask) "Взять" else "Завершить")
+                    }
+                },
+                dismissButton = {
+                    TextButton(onClick = { pendingTask = null }) {
+                        Text("Отмена")
+                    }
+                }
+            )
+        }
+        SnackbarHost(
+            hostState = snackbarHostState,
+            modifier = Modifier
+                .align(Alignment.TopCenter)
+                .padding(top = 6.dp),
+            snackbar = { data ->
+                Row(
+                    modifier = Modifier
+                        .widthIn(max = 240.dp)
+                        .clip(RoundedCornerShape(12.dp))
+                        .background(snackbarColor)
+                        .padding(horizontal = 12.dp, vertical = 9.dp),
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.Center
+                ) {
+                    Text(
+                        text = if (snackbarColor == Color(0xFF20A65A)) "✓" else "●",
+                        color = Color.White,
+                        fontWeight = FontWeight.Bold
+                    )
+
+                    Spacer(Modifier.width(8.dp))
+
+                    Text(
+                        text = data.visuals.message,
+                        fontSize = 11.sp,
+                        fontWeight = FontWeight.Medium,
+                        color = Color.White,
+                        maxLines = 1
+                    )
+                }
+            }
+        )
     }
 }
 
@@ -380,6 +369,7 @@ private fun TaskGroupCard(
     group: TaskGroupUi,
     onToggle: () -> Unit,
     onTaskClick: (TaskRowUi) -> Unit,
+    onTaskSwipe: (TaskRowUi) -> Unit,
 ) {
     CoFlowGlassCard(
         modifier =
@@ -432,7 +422,7 @@ private fun TaskGroupCard(
                     TaskRow(
                         task = task,
                         onClick = { onTaskClick(task) },
-                        onSwipe = onTaskSwipe,
+                        onSwipe = { onTaskSwipe(task) }
                     )
                     if (index < group.tasks.lastIndex) {
                         Box(
@@ -449,86 +439,116 @@ private fun TaskGroupCard(
     }
 }
 
+
 @Composable
 private fun TaskRow(
     task: TaskRowUi,
     onClick: () -> Unit,
-    onSwipe: (Task) -> Unit,
+    onSwipe: () -> Unit,
 ) {
     var offsetX by remember(task.id) { mutableFloatStateOf(0f) }
 
-    val swipeEnabled = task.isMine && task.status != TaskStatus.DONE
+    val swipeEnabled = task.isMine && !task.isDone
+    val actionColor = when (task.status) {
+        TaskStatus.TODO -> Color(0xFF2860D9)
+        TaskStatus.IN_PROGRESS -> Color(0xFF20A65A)
+        else -> Color.Transparent
+    }
 
-    val actionColor =
-        when (task.status) {
-            TaskStatus.TODO -> Color(0xFF2860D9)
-            TaskStatus.IN_PROGRESS -> Color(0xFF20A65A)
-            else -> Color.Transparent
-        }
-
-    val density = androidx.compose.ui.platform.LocalDensity.current
+    val density = LocalDensity.current
     val maxSwipe = with(density) { 64.dp.toPx() }
     val swipeThreshold = with(density) { 42.dp.toPx() }
 
     Box(
-        modifier =
-            Modifier
-                .fillMaxWidth()
-                .clip(RoundedCornerShape(10.dp))
-                .background(CoFlowColors.White)
-                .then(
-                    if (swipeEnabled) {
-                        Modifier.pointerInput(task.id) {
-                            detectHorizontalDragGestures(
-                                onHorizontalDrag = { change, dragAmount ->
-                                    change.consume()
+        modifier = Modifier
+            .fillMaxWidth()
+            .clip(RoundedCornerShape(10.dp))
+            .then(
+                if (swipeEnabled) {
+                    Modifier.pointerInput(task.id) {
+                        detectHorizontalDragGestures(
+                            onHorizontalDrag = { change, dragAmount ->
+                                change.consume()
 
-                                    if (dragAmount < 0f || offsetX < 0f) {
-                                        offsetX =
-                                            (offsetX + dragAmount)
-                                                .coerceIn(-maxSwipe, 0f)
-                                    }
-                                },
-                                onDragEnd = {
-                                    val shouldSwipe = offsetX <= -swipeThreshold
-                                    offsetX = 0f
+                                // Разрешаем только свайп справа налево
+                                if (dragAmount < 0f || offsetX < 0f) {
+                                    offsetX = (offsetX + dragAmount)
+                                        .coerceIn(-maxSwipe, 0f)
+                                }
+                            },
+                            onDragEnd = {
+                                val shouldSwipe = offsetX <= -swipeThreshold
+                                offsetX = 0f
 
-                                    if (shouldSwipe) {
-                                        onSwipe(task)
-                                    }
-                                },
-                                onDragCancel = {
-                                    offsetX = 0f
-                                },
-                            )
-                        }
-                    } else {
-                        Modifier
-                    },
-                ),
+                                if (shouldSwipe) {
+                                    onSwipe()
+                                }
+                            },
+                            onDragCancel = {
+                                offsetX = 0f
+                            }
+                        )
+                    }
+                } else {
+                    Modifier
+                }
+            )
     ) {
+        // Иконка справа. Подложка карточки не меняет цвет.
         if (swipeEnabled) {
             Box(
                 modifier = Modifier.matchParentSize(),
-                contentAlignment = Alignment.CenterEnd,
+                contentAlignment = Alignment.CenterEnd
             ) {
                 Box(
-                    modifier =
-                        Modifier
-                            .padding(end = 8.dp)
-                            .size(52.dp)
-                            .clip(RoundedCornerShape(12.dp))
-                            .background(CoFlowColors.White),
-                    contentAlignment = Alignment.Center,
+                    modifier = Modifier
+                        .padding(end = 8.dp)
+                        .size(52.dp)
+                        .clip(RoundedCornerShape(12.dp))
+                        .background(actionColor),
+                    contentAlignment = Alignment.Center
                 ) {
                     if (task.status == TaskStatus.TODO) {
-                        Icon(
-                            imageVector = Icons.Default.ArrowDownward,
-                            contentDescription = "Take task",
-                            modifier = Modifier.size(24.dp),
-                            tint = actionColor,
-                        )
+//                        Icon(
+//                            imageVector = Icons.Default.ArrowDownward,
+//                            contentDescription = "Take task",
+//                            modifier = Modifier.size(24.dp),
+//                            tint = actionColor,
+//                        )
+                        Canvas(modifier = Modifier.size(27.dp)) {
+                            drawCircle(
+                                color = Color.White,
+                                radius = size.width * 0.16f,
+                                center = Offset(
+                                    size.width / 2,
+                                    size.height * 0.30f
+                                ),
+                                style = Stroke(width = 2.dp.toPx())
+                            )
+
+                            drawArc(
+                                color = Color.White,
+                                startAngle = 180f,
+                                sweepAngle = 180f,
+                                useCenter = false,
+                                topLeft = Offset(
+                                    size.width * 0.18f,
+                                    size.height * 0.43f
+                                ),
+                                size = androidx.compose.ui.geometry.Size(
+                                    size.width * 0.64f,
+                                    size.height * 0.48f
+                                ),
+                                style = Stroke(width = 2.dp.toPx())
+                            )
+                        }
                     } else {
+//                        Text(
+//                            text = "✓",
+//                            color = Color.White,
+//                            fontSize = 25.sp,
+//                            fontWeight = FontWeight.Normal
+//                        )
                         Icon(
                             imageVector = Icons.Default.Check,
                             contentDescription = "Complete task",
@@ -540,55 +560,76 @@ private fun TaskRow(
             }
         }
 
+        // Сама карточка сдвигается, не меняя цвет и оформление.
         Column(
-            modifier =
-                Modifier
-                    .fillMaxWidth()
-                    .padding(vertical = 6.dp)
-                    .clickable { onClick() },
+            modifier = Modifier
+                .fillMaxWidth()
+                .graphicsLayer {
+                    translationX = offsetX
+                }
+                .clip(RoundedCornerShape(10.dp))
+                .background(coFlowTasksBackgroundBrush())
+                .clickable { onClick() }
+                .padding(vertical = 6.dp)
         ) {
             Row(
-                modifier = Modifier.fillMaxWidth(),
-                verticalAlignment = Alignment.CenterVertically,
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(horizontal = 2.dp),
+                verticalAlignment = Alignment.CenterVertically
             ) {
                 Text(
                     text = task.title,
                     fontSize = 12.sp,
                     fontWeight = FontWeight.Medium,
-                    color = if (task.isDone) CoFlowColors.TextSecondary else CoFlowColors.TextPrimary,
+                    color = if (task.isDone) {
+                        CoFlowColors.TextSecondary
+                    } else {
+                        CoFlowColors.TextPrimary
+                    },
                     maxLines = 1,
                     overflow = TextOverflow.Ellipsis,
-                    modifier = Modifier.weight(1f),
+                    modifier = Modifier.weight(1f)
                 )
+
                 if (task.isOverdue) {
                     Spacer(Modifier.width(4.dp))
                     Text(
                         text = stringResource(R.string.task_outdated),
                         fontSize = 8.sp,
-                        color = CoFlowColors.Error,
+                        color = CoFlowColors.Error
                     )
                 }
             }
+
             Spacer(Modifier.height(3.dp))
+
             Row(
-                modifier = Modifier.fillMaxWidth(),
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(horizontal = 2.dp),
                 horizontalArrangement = Arrangement.SpaceBetween,
-                verticalAlignment = Alignment.CenterVertically,
+                verticalAlignment = Alignment.CenterVertically
             ) {
                 Text(
                     text = task.projectName,
                     fontSize = 10.sp,
                     color = CoFlowColors.TextSecondary,
-                    maxLines = 1,
+                    maxLines = 1
                 )
+
                 Text(
                     text = task.dueDateFormatted,
                     fontSize = 10.sp,
-                    color = CoFlowColors.TextSecondary,
+                    color = CoFlowColors.TextSecondary
                 )
             }
         }
     }
+}
+
+
+
 
     // --- Внутренние компоненты для панели фильтров ---
     @Composable
@@ -652,12 +693,7 @@ private fun TaskRow(
                         RoundedCornerShape(
                             16.dp,
                         ),
-                    containerColor =
-                        Color(
-                            0xFFF4F8FF,
-                        ).copy(
-                            alpha = 0.62f,
-                        ),
+                    containerColor = Color(0xFFF4F8FF),
                     tonalElevation = 0.dp,
                     shadowElevation = 0.dp,
                     border = BorderStroke(1.dp, Color.White.copy(alpha = 0.82f)),
@@ -893,6 +929,7 @@ fun TasksRoute(
     onNavigateToTaskDetail: (String) -> Unit,
     onNavigateToProjects: () -> Unit,
     onNavigateToProfile: () -> Unit,
+    onTaskSwipe: (TaskRowUi) -> Unit,
 ) {
     // Подписываемся на изменения состояния с учетом жизненного цикла
     val state by viewModel.uiState.collectAsStateWithLifecycle()
@@ -907,6 +944,7 @@ fun TasksRoute(
         onNavigateToProjects = onNavigateToProjects,
         onNavigateToProfile = onNavigateToProfile,
         onClearError = viewModel::clearError,
+        onTaskSwipe = viewModel::onTaskSwipe,
     )
 }
 
@@ -1014,27 +1052,7 @@ fun TasksScreen_Default_Preview() {
             onNavigateToProjects = {},
             onNavigateToProfile = {},
             onClearError = {},
+            onTaskSwipe = {},
         )
-        if (selected) {
-            Icon(
-                imageVector = Icons.Default.Check,
-                contentDescription = null,
-                modifier = Modifier.size(16.dp),
-                tint = CoFlowColors.Blue,
-            )
-        }
     }
-}
-
-@Composable
-fun SortFilterPanel(
-    modifier: Modifier,
-    grouping: TaskGrouping,
-    onGroupingChange: (TaskGrouping) -> Unit,
-    filterButtonText: String,
-    onFilterToggle: (TaskFilterItem) -> Unit,
-    selectedFilters: Set<String>,
-    availableFilters: List<TaskFilterItem>,
-) {
-    TODO("Not yet implemented")
 }
