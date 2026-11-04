@@ -2,7 +2,6 @@ package com.example.coflow
 
 import android.annotation.SuppressLint
 import android.os.Bundle
-import android.widget.Toast
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
@@ -51,12 +50,14 @@ object Screen {
 }
 
 class MainActivity : ComponentActivity() {
+    @SuppressLint("ComposableDestinationInComposeScope")
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         enableEdgeToEdge()
 
         setContent {
             CoFlowTheme {
+                // Кастомный Ripple
                 CompositionLocalProvider(
                     LocalIndication provides CoFlowIndication,
                 ) {
@@ -89,7 +90,7 @@ class MainActivity : ComponentActivity() {
                                 )
                             }
 
-                            // Экран Проекты
+                            // Проекты
                             composable(Screen.PROJECTS) {
                                 ProjectsRoute(
                                     onNavigateToCreateProject = { navController.navigate(Screen.CREATE_PROJECT) },
@@ -112,7 +113,9 @@ class MainActivity : ComponentActivity() {
                             // Просмотр задачи
                             composable(
                                 route = Screen.TASK_DETAIL,
-                                arguments = listOf(navArgument("taskId") { type = NavType.StringType }),
+                                arguments = listOf(navArgument("taskId") {
+                                    type = NavType.StringType
+                                }),
                             ) {
                                 TaskDetailRoute(
                                     onNavigateBack = { navController.popBackStack() },
