@@ -42,7 +42,6 @@ object Screen {
     const val CHOOSE_ASSIGNEE = "choose_assignee"
     const val CHOOSE_PROJECT = "choose_project"
     const val CHOOSE_DATE = "choose_date"
-
     const val TASK_DETAIL = "task_detail/{taskId}"
     const val PROJECTS = "projects"
     const val CREATE_PROJECT = "create_project"
@@ -57,7 +56,6 @@ class MainActivity : ComponentActivity() {
 
         setContent {
             CoFlowTheme {
-                // Кастомный Ripple
                 CompositionLocalProvider(
                     LocalIndication provides CoFlowIndication,
                 ) {
