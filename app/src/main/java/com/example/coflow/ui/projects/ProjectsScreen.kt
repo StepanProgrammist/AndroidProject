@@ -72,7 +72,7 @@ import com.example.coflow.ui.theme.coFlowTasksBackgroundBrush
 fun ProjectsRoute(
     onNavigateToCreateProject: () -> Unit,
     onNavigateToTasks: () -> Unit,
-    onNavigateToProjectDetail: (projectId: String) -> Unit,
+    onNavigateToProjectTasks: (String) -> Unit,
     viewModel: ProjectsViewModel = viewModel(),
 ) {
     val state by viewModel.state.collectAsStateWithLifecycle()
@@ -84,7 +84,7 @@ fun ProjectsRoute(
         onFilterSelect = viewModel::onFilterSelect,
         onNavigateToCreateProject = onNavigateToCreateProject,
         onNavigateToTasks = onNavigateToTasks,
-        onNavigateToProjectDetail = onNavigateToProjectDetail,
+        onNavigateToProjectTasks = onNavigateToProjectTasks,
     )
 }
 
@@ -97,7 +97,7 @@ fun ProjectsScreen(
     onFilterSelect: (ProjectFilter) -> Unit,
     onNavigateToCreateProject: () -> Unit,
     onNavigateToTasks: () -> Unit,
-    onNavigateToProjectDetail: (projectId: String) -> Unit,
+    onNavigateToProjectTasks: (String) -> Unit,
 ) {
     // Стейт для скролла и скрытия нижней панели
     val listState = rememberLazyListState()
@@ -177,7 +177,10 @@ fun ProjectsScreen(
                 }
             } else {
                 items(state.projects, key = { it.id }) { project ->
-                    ProjectCard(project = project, onClick = { onNavigateToProjectDetail(project.id) })
+                    ProjectCard(
+                        project = project,
+                        onClick = { onNavigateToProjectTasks(project.id) },
+                    )
                 }
             }
         }
@@ -243,9 +246,12 @@ private fun ProjectCard(
     project: ProjectUiItem,
     onClick: () -> Unit,
 ) {
-    CoFlowGlassCard(modifier = Modifier.fillMaxWidth()) {
+    CoFlowGlassCard(
+        modifier = Modifier.fillMaxWidth(),
+        onClick = onClick,
+    ) {
         Row(
-            modifier = Modifier.fillMaxWidth().padding(vertical = 4.dp).clickable { onClick() },
+            modifier = Modifier.fillMaxWidth().padding(vertical = 4.dp),
             verticalAlignment = Alignment.CenterVertically,
         ) {
             // Цветная полоска слева
@@ -314,7 +320,7 @@ private fun ProjectFilterPanel(
                     )
                     Spacer(Modifier.width(3.dp))
                     CoFlowIcon(
-                        name = "chevron_down",
+                        name = if (isExpanded) "chevron_up" else "chevron",
                         modifier = Modifier.size(14.dp),
                         color = CoFlowColors.Blue,
                     )
@@ -392,8 +398,7 @@ private fun GlassFilterOption(
                             colors = listOf(Color(0xFF6EA5FF), CoFlowColors.Blue),
                             start = Offset.Zero,
                             end =
-                                androidx.compose.ui.geometry
-                                    .Offset(size.width, size.height),
+                                Offset(size.width, size.height),
                         ),
                 )
             } else {
@@ -423,7 +428,7 @@ private fun ProjectsScreenPreview() {
             onFilterSelect = {},
             onNavigateToCreateProject = {},
             onNavigateToTasks = {},
-            onNavigateToProjectDetail = {},
+            onNavigateToProjectTasks = {},
         )
     }
 }
