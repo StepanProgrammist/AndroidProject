@@ -23,6 +23,7 @@ import androidx.navigation.navArgument
 import com.example.coflow.repositories.FirebaseAuthRepositoryImpl
 import com.example.coflow.ui.auth.AuthRoute
 import com.example.coflow.ui.projects.CreateProjectRoute
+import com.example.coflow.ui.projects.EditProjectRoute
 import com.example.coflow.ui.projects.ProjectDetailRoute
 import com.example.coflow.ui.projects.ProjectsRoute
 import com.example.coflow.ui.tasks.ChooseAssigneeRoute
@@ -48,6 +49,8 @@ object Screen {
     const val PROJECT_DETAIL = "project_detail/{projectId}"
     const val CREATE_PROJECT = "create_project"
     const val EDIT_TASK = "edit_task/{taskId}"
+
+    const val EDIT_PROJECT = "edit_project/{projectId}"
 }
 
 class MainActivity : ComponentActivity() {
@@ -112,6 +115,27 @@ class MainActivity : ComponentActivity() {
                                 ProjectDetailRoute(
                                     onNavigateBack = { navController.popBackStack() },
                                     onNavigateToEdit = { projectId -> navController.navigate("edit_project/$projectId") },
+                                )
+                            }
+
+                            // Редактирование проекта
+                            composable(
+                                route = Screen.EDIT_PROJECT,
+                                arguments =
+                                    listOf(
+                                        navArgument("projectId") {
+                                            type = NavType.StringType
+                                        },
+                                    ),
+                            ) {
+                                EditProjectRoute(
+                                    onNavigateBack = { navController.popBackStack() },
+                                    onProjectSaved = {
+                                        navController.popBackStack()
+                                    },
+                                    onProjectDeleted = {
+                                        navController.popBackStack()
+                                    },
                                 )
                             }
 
