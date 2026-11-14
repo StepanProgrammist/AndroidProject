@@ -38,35 +38,33 @@ object CoFlowSpacing {
 // =====================================================
 // ЦВЕТОВЫЕ СХЕМЫ Material3
 // =====================================================
-private val DarkColorScheme =
-    darkColorScheme(
-        primary = CoFlowColors.Blue,
-        secondary = CoFlowColors.BlueLight,
-        tertiary = CoFlowColors.TextSecondary,
-        background = Color(0xFF10213B),
-        surface = Color(0xFF1E293B),
-        onPrimary = CoFlowColors.White,
-        onSecondary = CoFlowColors.White,
-        onTertiary = CoFlowColors.White,
-        onBackground = CoFlowColors.White,
-        onSurface = CoFlowColors.White,
-        error = CoFlowColors.Error,
-    )
+private val DarkColorScheme = darkColorScheme(
+    primary = CoFlowColors.Blue,
+    secondary = CoFlowColors.BlueLight,
+    tertiary = CoFlowColors.TextSecondary,
+    background = Color(0xFF10213B),
+    surface = Color(0xFF1E293B),
+    onPrimary = CoFlowColors.White,
+    onSecondary = CoFlowColors.White,
+    onTertiary = CoFlowColors.White,
+    onBackground = CoFlowColors.White,
+    onSurface = CoFlowColors.White,
+    error = CoFlowColors.Error
+)
 
-private val LightColorScheme =
-    lightColorScheme(
-        primary = CoFlowColors.Blue,
-        secondary = CoFlowColors.BlueLight,
-        tertiary = CoFlowColors.TextSecondary,
-        background = CoFlowColors.BackgroundTop,
-        surface = CoFlowColors.White,
-        onPrimary = CoFlowColors.White,
-        onSecondary = CoFlowColors.TextPrimary,
-        onTertiary = CoFlowColors.TextPrimary,
-        onBackground = CoFlowColors.TextPrimary,
-        onSurface = CoFlowColors.TextPrimary,
-        error = CoFlowColors.Error,
-    )
+private val LightColorScheme = lightColorScheme(
+    primary = CoFlowColors.Blue,
+    secondary = CoFlowColors.BlueLight,
+    tertiary = CoFlowColors.TextSecondary,
+    background = CoFlowColors.BackgroundTop,
+    surface = CoFlowColors.White,
+    onPrimary = CoFlowColors.White,
+    onSecondary = CoFlowColors.TextPrimary,
+    onTertiary = CoFlowColors.TextPrimary,
+    onBackground = CoFlowColors.TextPrimary,
+    onSurface = CoFlowColors.TextPrimary,
+    error = CoFlowColors.Error
+)
 
 // =====================================================
 // КОМПОЗАБЛ ТЕМЫ
@@ -77,21 +75,20 @@ fun CoFlowTheme(
     // Dynamic color доступен на Android 12+.
     // Установите false, если хотите всегда использовать фирменные цвета CoFlow.
     dynamicColor: Boolean = true,
-    content: @Composable () -> Unit,
+    content: @Composable () -> Unit
 ) {
-    val colorScheme =
-        when {
-            dynamicColor && Build.VERSION.SDK_INT >= Build.VERSION_CODES.S -> {
-                val context = LocalContext.current
-                if (darkTheme) dynamicDarkColorScheme(context) else dynamicLightColorScheme(context)
-            }
-            darkTheme -> DarkColorScheme
-            else -> LightColorScheme
+    val colorScheme = when {
+        dynamicColor && Build.VERSION.SDK_INT >= Build.VERSION_CODES.S -> {
+            val context = LocalContext.current
+            if (darkTheme) dynamicDarkColorScheme(context) else dynamicLightColorScheme(context)
         }
+        darkTheme -> DarkColorScheme
+        else -> LightColorScheme
+    }
 
     MaterialTheme(
         colorScheme = colorScheme,
         typography = Typography,
-        content = content,
+        content = content
     )
 }

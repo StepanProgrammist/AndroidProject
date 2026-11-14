@@ -6,14 +6,13 @@ package com.example.coflow.models
  * @property code Числовой код роли, который сохраняется в Firestore для экономии места и оптимизации запросов.
  */
 
-enum class Role(
-    val code: Int,
-) {
+enum class Role(val code: Int) {
     MEMBER(0),
-    OWNER(1),
-    ;
+    OWNER(1);
 
     companion object {
-        fun fromInt(value: Int): Role = entries.firstOrNull { it.code == value } ?: MEMBER
+        fun fromInt(value: Int): Role {
+            return entries.firstOrNull { it.code == value } ?: MEMBER
+        }
     }
 }

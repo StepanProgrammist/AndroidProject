@@ -5,6 +5,7 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.example.coflow.R
 import com.example.coflow.models.MembershipModel
+import com.example.coflow.models.ProjectModel
 import com.example.coflow.models.Role
 import com.example.coflow.models.UserModel
 import com.example.coflow.repositories.AuthRepository
