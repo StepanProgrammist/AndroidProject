@@ -18,10 +18,12 @@ import androidx.compose.foundation.text.KeyboardActions
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.AlertDialog
+import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalFocusManager
@@ -39,12 +41,9 @@ import com.example.coflow.ui.components.CoFlowEditDeleteButton
 import com.example.coflow.ui.components.CoFlowEditSaveButton
 import com.example.coflow.ui.components.CoFlowGlassTextField
 import com.example.coflow.ui.components.CoFlowScreenHeader
+import com.example.coflow.ui.theme.CoFlowColors
 import com.example.coflow.ui.theme.CoFlowSpacing
 import com.example.coflow.ui.theme.coFlowTasksBackgroundBrush
-import androidx.compose.material3.CircularProgressIndicator
-import androidx.compose.ui.Alignment
-import com.example.coflow.ui.theme.CoFlowColors
-
 
 @Composable
 fun EditTaskScreen(
@@ -114,83 +113,84 @@ fun EditTaskScreen(
                         placeholder = stringResource(R.string.creation_task_name_placeholder),
                     )
 
-                CoFlowGlassTextField(
-                    label = stringResource(R.string.creation_task_description_label),
-                    value = state.description,
-                    onValueChange = onDescriptionChange,
-                    placeholder = stringResource(R.string.creation_task_description_placeholder),
-                    singleLine = false,
-                    maxLength = 250,
-                )
+                    CoFlowGlassTextField(
+                        label = stringResource(R.string.creation_task_description_label),
+                        value = state.description,
+                        onValueChange = onDescriptionChange,
+                        placeholder = stringResource(R.string.creation_task_description_placeholder),
+                        singleLine = false,
+                        maxLength = 250,
+                    )
 
-                CoFlowGlassTextField(
-                    label = stringResource(R.string.creation_task_assignee_label),
-                    value = state.assignees,
-                    onValueChange = onAssigneesChange,
-                    placeholder = stringResource(R.string.creation_task_assignee_placeholder),
-                    leadingIcon = "person",
-                    trailingIcon = "chevron",
-                    onClick = onNavigateToAssignees,
-                )
+                    CoFlowGlassTextField(
+                        label = stringResource(R.string.creation_task_assignee_label),
+                        value = state.assignees,
+                        onValueChange = onAssigneesChange,
+                        placeholder = stringResource(R.string.creation_task_assignee_placeholder),
+                        leadingIcon = "person",
+                        trailingIcon = "chevron",
+                        onClick = onNavigateToAssignees,
+                    )
 
-                CoFlowGlassTextField(
-                    label = stringResource(R.string.creation_task_project_label),
-                    value = state.project,
-                    onValueChange = onProjectChange,
-                    placeholder = stringResource(R.string.creation_task_project_placeholder),
-                    leadingIcon = "folder",
-                    trailingIcon = "chevron",
-                    onClick = onNavigateToProject,
-                )
+                    CoFlowGlassTextField(
+                        label = stringResource(R.string.creation_task_project_label),
+                        value = state.project,
+                        onValueChange = onProjectChange,
+                        placeholder = stringResource(R.string.creation_task_project_placeholder),
+                        leadingIcon = "folder",
+                        trailingIcon = "chevron",
+                        onClick = onNavigateToProject,
+                    )
 
-                CoFlowGlassTextField(
-                    label = stringResource(R.string.creation_task_deadline_label),
-                    value = state.dueDate,
-                    onValueChange = onDueDateChange,
-                    placeholder = stringResource(R.string.creation_task_deadline_placeholder),
-                    leadingIcon = "calendar",
-                    trailingIcon = "chevron",
-                    onClick = onNavigateToDate,
-                    keyboardOptions =
-                        KeyboardOptions(
-                            keyboardType = KeyboardType.Text,
-                            imeAction = ImeAction.Done,
-                        ),
-                    keyboardActions =
-                        KeyboardActions(
-                            onDone = { focusManager.clearFocus() },
-                        ),
-                )
+                    CoFlowGlassTextField(
+                        label = stringResource(R.string.creation_task_deadline_label),
+                        value = state.dueDate,
+                        onValueChange = onDueDateChange,
+                        placeholder = stringResource(R.string.creation_task_deadline_placeholder),
+                        leadingIcon = "calendar",
+                        trailingIcon = "chevron",
+                        onClick = onNavigateToDate,
+                        keyboardOptions =
+                            KeyboardOptions(
+                                keyboardType = KeyboardType.Text,
+                                imeAction = ImeAction.Done,
+                            ),
+                        keyboardActions =
+                            KeyboardActions(
+                                onDone = { focusManager.clearFocus() },
+                            ),
+                    )
 
-                Spacer(modifier = Modifier.size(4.dp))
-            }
+                    Spacer(modifier = Modifier.size(4.dp))
+                }
 
-            // Новые кнопки редактирования располагаются рядом.
-            Row(
-                modifier =
-                    Modifier
-                        .fillMaxWidth()
-                        .padding(top = 8.dp, bottom = 16.dp),
-                horizontalArrangement = Arrangement.spacedBy(12.dp),
-            ) {
-                CoFlowEditDeleteButton(
-                    text = stringResource(R.string.edit_task_delete_button),
-                    onClick = {
-                        focusManager.clearFocus()
-                        onDeleteClick()
-                    },
-                    modifier = Modifier.weight(1f),
-                )
+                // Новые кнопки редактирования располагаются рядом.
+                Row(
+                    modifier =
+                        Modifier
+                            .fillMaxWidth()
+                            .padding(top = 8.dp, bottom = 16.dp),
+                    horizontalArrangement = Arrangement.spacedBy(12.dp),
+                ) {
+                    CoFlowEditDeleteButton(
+                        text = stringResource(R.string.edit_task_delete_button),
+                        onClick = {
+                            focusManager.clearFocus()
+                            onDeleteClick()
+                        },
+                        modifier = Modifier.weight(1f),
+                    )
 
-                CoFlowEditSaveButton(
-                    text = stringResource(R.string.edit_task_save_button),
-                    onClick = {
-                        focusManager.clearFocus()
-                        onSaveClick()
-                    },
-                    modifier = Modifier.weight(1f),
-                    enabled = state.canSave,
-                )
+                    CoFlowEditSaveButton(
+                        text = stringResource(R.string.edit_task_save_button),
+                        onClick = {
+                            focusManager.clearFocus()
+                            onSaveClick()
+                        },
+                        modifier = Modifier.weight(1f),
+                        enabled = state.canSave,
+                    )
+                }
             }
         }
     }
