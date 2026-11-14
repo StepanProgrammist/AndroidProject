@@ -72,6 +72,7 @@ import com.example.coflow.ui.theme.coFlowTasksBackgroundBrush
 fun ProjectsRoute(
     onNavigateToCreateProject: () -> Unit,
     onNavigateToTasks: () -> Unit,
+    onNavigateToProjectDetail: (projectId: String) -> Unit,
     viewModel: ProjectsViewModel = viewModel(),
 ) {
     val state by viewModel.state.collectAsStateWithLifecycle()
@@ -83,6 +84,7 @@ fun ProjectsRoute(
         onFilterSelect = viewModel::onFilterSelect,
         onNavigateToCreateProject = onNavigateToCreateProject,
         onNavigateToTasks = onNavigateToTasks,
+        onNavigateToProjectDetail = onNavigateToProjectDetail,
     )
 }
 
@@ -95,6 +97,7 @@ fun ProjectsScreen(
     onFilterSelect: (ProjectFilter) -> Unit,
     onNavigateToCreateProject: () -> Unit,
     onNavigateToTasks: () -> Unit,
+    onNavigateToProjectDetail: (projectId: String) -> Unit,
 ) {
     // Стейт для скролла и скрытия нижней панели
     val listState = rememberLazyListState()
@@ -174,7 +177,7 @@ fun ProjectsScreen(
                 }
             } else {
                 items(state.projects, key = { it.id }) { project ->
-                    ProjectCard(project = project)
+                    ProjectCard(project = project, onClick = { onNavigateToProjectDetail(project.id) })
                 }
             }
         }
@@ -236,10 +239,13 @@ fun ProjectsScreen(
 
 // Карточка проекта
 @Composable
-private fun ProjectCard(project: ProjectUiItem) {
+private fun ProjectCard(
+    project: ProjectUiItem,
+    onClick: () -> Unit,
+) {
     CoFlowGlassCard(modifier = Modifier.fillMaxWidth()) {
         Row(
-            modifier = Modifier.fillMaxWidth().padding(vertical = 4.dp),
+            modifier = Modifier.fillMaxWidth().padding(vertical = 4.dp).clickable { onClick() },
             verticalAlignment = Alignment.CenterVertically,
         ) {
             // Цветная полоска слева
@@ -321,7 +327,7 @@ private fun ProjectFilterPanel(
             expanded = isExpanded,
             onDismissRequest = onToggle,
             shape = RoundedCornerShape(16.dp),
-            containerColor = Color(0xFFF4F8FF).copy(alpha = 0.62f),
+            containerColor = Color(0xFFF4F8FF),
             tonalElevation = 0.dp,
             shadowElevation = 0.dp,
             border = BorderStroke(1.dp, Color.White.copy(alpha = 0.82f)),
@@ -417,6 +423,7 @@ private fun ProjectsScreenPreview() {
             onFilterSelect = {},
             onNavigateToCreateProject = {},
             onNavigateToTasks = {},
+            onNavigateToProjectDetail = {},
         )
     }
 }
