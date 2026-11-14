@@ -96,7 +96,7 @@
     <string name="create_task_projects">Проекты</string>
 
     <string name="create_task_assignee">Исполнители</string>
-
+А
     <!-- Группировка -->
     <string name="grouping_header">Группировка</string>
     <string name="grouping_status">По статусу</string>
@@ -115,6 +115,8 @@
     <!-- Строка для подтверждения действия с задачей -->
     <string name="task_action_confirm_take">Взять задачу?</string>
     <string name="task_action_confirm_complete">Завершить задачу?</string>
+    <string name="task_action_message_take">Вы действительно хотите взять задачу «%1$s» в работу?</string>
+    <string name="task_action_message_complete">Вы действительно хотите отметить задачу «%1$s» выполненной?</string>
     <string name="task_action_taken">Вы успешно взяли задачу</string>
     <string name="task_action_completed">Задача выполнена успешно</string>
     <string name="task_action_button_take">Взять</string>
