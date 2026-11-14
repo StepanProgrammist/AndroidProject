@@ -327,7 +327,7 @@ private fun ProjectFilterPanel(
             expanded = isExpanded,
             onDismissRequest = onToggle,
             shape = RoundedCornerShape(16.dp),
-            containerColor = Color(0xFFF4F8FF).copy(alpha = 0.62f),
+            containerColor = Color(0xFFF4F8FF),
             tonalElevation = 0.dp,
             shadowElevation = 0.dp,
             border = BorderStroke(1.dp, Color.White.copy(alpha = 0.82f)),
