@@ -267,6 +267,7 @@ private fun MemberRow(
         )
         Spacer(Modifier.width(4.dp))
 
+
         if (!isOwner) {
             Box {
                 IconButton(
@@ -319,8 +320,7 @@ private fun MemberRow(
                     expanded = roleMenuExpanded,
                     onDismissRequest = { roleMenuExpanded = false },
                 ) {
-                    Role
-                        .values()
+                    Role.values()
                         .filter { it != Role.OWNER }
                         .forEach { role ->
                             DropdownMenuItem(
@@ -358,6 +358,7 @@ private fun MemberRow(
 private fun getRoleText(role: Role): String =
     when (role) {
         Role.OWNER -> stringResource(R.string.role_owner)
+        // Role.ADMIN -> "Администратор" // Раскомментируйте, если в вашем enum есть ADMIN
         else -> stringResource(R.string.role_member)
     }
 
