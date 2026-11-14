@@ -24,6 +24,7 @@ import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.ArrowDropDown
 import androidx.compose.material.icons.filled.Delete
+import androidx.compose.material.icons.filled.MoreVert
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.DropdownMenu
 import androidx.compose.material3.DropdownMenuItem
@@ -63,7 +64,6 @@ import com.example.coflow.ui.theme.CoFlowColors
 import com.example.coflow.ui.theme.CoFlowSpacing
 import com.example.coflow.ui.theme.CoFlowTheme
 import com.example.coflow.ui.theme.coFlowTasksBackgroundBrush
-import androidx.compose.material.icons.filled.MoreVert
 
 @Composable
 fun EditProjectScreen(
@@ -185,6 +185,15 @@ fun EditProjectScreen(
                         .padding(top = 8.dp, bottom = 16.dp),
                 horizontalArrangement = Arrangement.spacedBy(12.dp),
             ) {
+                CoFlowEditDeleteButton(
+                    text = stringResource(R.string.edit_project_delete_button),
+                    onClick = {
+                        focusManager.clearFocus()
+                        onDeleteClick()
+                    },
+                    modifier = Modifier.weight(1f),
+                )
+
                 CoFlowEditSaveButton(
                     text = stringResource(R.string.edit_task_save_button),
                     onClick = {
@@ -193,15 +202,6 @@ fun EditProjectScreen(
                     },
                     modifier = Modifier.weight(1f),
                     enabled = state.canSave,
-                )
-
-                CoFlowEditDeleteButton(
-                    text = stringResource(R.string.edit_task_delete_button),
-                    onClick = {
-                        focusManager.clearFocus()
-                        onDeleteClick()
-                    },
-                    modifier = Modifier.weight(1f),
                 )
             }
         }
@@ -267,7 +267,6 @@ private fun MemberRow(
         )
         Spacer(Modifier.width(4.dp))
 
-
         if (!isOwner) {
             Box {
                 IconButton(
@@ -320,7 +319,8 @@ private fun MemberRow(
                     expanded = roleMenuExpanded,
                     onDismissRequest = { roleMenuExpanded = false },
                 ) {
-                    Role.values()
+                    Role
+                        .values()
                         .filter { it != Role.OWNER }
                         .forEach { role ->
                             DropdownMenuItem(
@@ -358,7 +358,6 @@ private fun MemberRow(
 private fun getRoleText(role: Role): String =
     when (role) {
         Role.OWNER -> stringResource(R.string.role_owner)
-        // Role.ADMIN -> "Администратор" // Раскомментируйте, если в вашем enum есть ADMIN
         else -> stringResource(R.string.role_member)
     }
 

@@ -133,6 +133,7 @@
         <string name="project_status_archive">Archive</string>
         <string name="project_filter_title">Filter</string>
         <string name="project_empty_state">No projects found</string>
+        <string name="edit_project_delete_button">Delete project</string>
 
         <!-- Фильтры проектов -->
     <string name="error_no_edit_permission">Insufficient permissions to edit</string>

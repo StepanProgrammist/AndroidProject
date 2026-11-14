@@ -135,6 +135,7 @@
     <string name="project_filter_title">Фильтр</string>
     <string name="project_empty_state">Проекты не найдены</string>
     <string name="error_no_edit_permission">Недостаточно прав для редактирования</string>
+    <string name="edit_project_delete_button">Удалить проект</string>
 
     <!-- Фильтры проектов -->
     <string name="project_filter_all">Все</string>
