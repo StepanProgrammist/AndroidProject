@@ -151,7 +151,7 @@ class MainActivity : ComponentActivity() {
                             ) { backStackEntry ->
                                 ProjectTasksRoute(
                                     onBackClick = { navController.popBackStack() },
-                                    onNavigateToCreateTask = { "create_task" },
+                                    onNavigateToCreateTask = { navController.navigate("create_task") },
                                     onNavigateToTaskDetail = { taskId ->
                                         navController.navigate("task_detail/$taskId")
                                     },
