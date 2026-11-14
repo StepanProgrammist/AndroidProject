@@ -41,6 +41,10 @@ import com.example.coflow.ui.components.CoFlowGlassTextField
 import com.example.coflow.ui.components.CoFlowScreenHeader
 import com.example.coflow.ui.theme.CoFlowSpacing
 import com.example.coflow.ui.theme.coFlowTasksBackgroundBrush
+import androidx.compose.material3.CircularProgressIndicator
+import androidx.compose.ui.Alignment
+import com.example.coflow.ui.theme.CoFlowColors
+
 
 @Composable
 fun EditTaskScreen(
@@ -59,6 +63,38 @@ fun EditTaskScreen(
 ) {
     val focusManager = LocalFocusManager.current
 
+    // TODO: Обработку ошибок (загрузка, сохранение, удаление) сейчас ошибки отображаются
+// в AlertDialog, кнопка «ОК» возвращает на предыдущий экран, надо?
+    val errorText = when {
+        state.errorMessageResId != null && state.errorMessage != null ->
+            stringResource(state.errorMessageResId, state.errorMessage)
+
+        state.errorMessageResId != null ->
+            stringResource(state.errorMessageResId)
+
+        else -> state.errorMessage
+    }
+
+    if (errorText != null) {
+        AlertDialog(
+            onDismissRequest = {},
+            title = {
+                Text(
+                    text = stringResource(R.string.error_title),
+                    color = CoFlowColors.Error,
+                )
+            },
+            text = {
+                Text(text = errorText)
+            },
+            confirmButton = {
+                TextButton(onClick = onBackClick) {
+                    Text(stringResource(R.string.ok_button))
+                }
+            },
+        )
+    }
+
     // Возвращаем пользователя на предыдущий экран системной кнопкой «Назад».
     BackHandler(onBack = onBackClick)
 
@@ -68,115 +104,126 @@ fun EditTaskScreen(
                 .fillMaxSize()
                 .background(coFlowTasksBackgroundBrush()),
     ) {
-        Column(
-            modifier =
-                Modifier
-                    .fillMaxSize()
-                    .navigationBarsPadding()
-                    .imePadding()
-                    .padding(horizontal = CoFlowSpacing.ScreenHorizontal),
-        ) {
-            CoFlowScreenHeader(
-                title = stringResource(R.string.edit_task_header),
-                onBackClick = {
-                    focusManager.clearFocus()
-                    onBackClick()
-                },
-            )
-
-            // Поля формы прокручиваются, а кнопки остаются внизу экрана.
+        if (state.isLoading) {
+            Box(
+                modifier = Modifier.fillMaxSize(),
+                contentAlignment = Alignment.Center,
+            ) {
+                CircularProgressIndicator(
+                    color = CoFlowColors.Blue,
+                )
+            }
+        } else {
             Column(
                 modifier =
                     Modifier
-                        .weight(1f)
-                        .fillMaxWidth()
-                        .verticalScroll(rememberScrollState()),
-                verticalArrangement = Arrangement.spacedBy(12.dp),
+                        .fillMaxSize()
+                        .navigationBarsPadding()
+                        .imePadding()
+                        .padding(horizontal = CoFlowSpacing.ScreenHorizontal),
             ) {
-                CoFlowGlassTextField(
-                    label = stringResource(R.string.creation_task_name_label),
-                    value = state.title,
-                    onValueChange = onTitleChange,
-                    placeholder = stringResource(R.string.creation_task_name_placeholder),
-                )
-
-                CoFlowGlassTextField(
-                    label = stringResource(R.string.creation_task_description_label),
-                    value = state.description,
-                    onValueChange = onDescriptionChange,
-                    placeholder = stringResource(R.string.creation_task_description_placeholder),
-                    singleLine = false,
-                    maxLength = 250,
-                )
-
-                CoFlowGlassTextField(
-                    label = stringResource(R.string.creation_task_assignee_label),
-                    value = state.assignees,
-                    onValueChange = onAssigneesChange,
-                    placeholder = stringResource(R.string.creation_task_assignee_placeholder),
-                    leadingIcon = "person",
-                    trailingIcon = "chevron",
-                    onClick = onNavigateToAssignees,
-                )
-
-                CoFlowGlassTextField(
-                    label = stringResource(R.string.creation_task_project_label),
-                    value = state.project,
-                    onValueChange = onProjectChange,
-                    placeholder = stringResource(R.string.creation_task_project_placeholder),
-                    leadingIcon = "folder",
-                    trailingIcon = "chevron",
-                    onClick = onNavigateToProject,
-                )
-
-                CoFlowGlassTextField(
-                    label = stringResource(R.string.creation_task_deadline_label),
-                    value = state.dueDate,
-                    onValueChange = onDueDateChange,
-                    placeholder = stringResource(R.string.creation_task_deadline_placeholder),
-                    leadingIcon = "calendar",
-                    trailingIcon = "chevron",
-                    onClick = onNavigateToDate,
-                    keyboardOptions =
-                        KeyboardOptions(
-                            keyboardType = KeyboardType.Text,
-                            imeAction = ImeAction.Done,
-                        ),
-                    keyboardActions =
-                        KeyboardActions(
-                            onDone = { focusManager.clearFocus() },
-                        ),
-                )
-
-                Spacer(modifier = Modifier.size(4.dp))
-            }
-
-            // Новые кнопки редактирования располагаются рядом.
-            Row(
-                modifier =
-                    Modifier
-                        .fillMaxWidth()
-                        .padding(top = 8.dp, bottom = 16.dp),
-                horizontalArrangement = Arrangement.spacedBy(12.dp),
-            ) {
-                CoFlowEditSaveButton(
-                    text = stringResource(R.string.edit_task_save_button),
-                    onClick = {
+                CoFlowScreenHeader(
+                    title = stringResource(R.string.edit_task_header),
+                    onBackClick = {
                         focusManager.clearFocus()
-                        onSaveClick()
+                        onBackClick()
                     },
-                    modifier = Modifier.weight(1f),
-                    enabled = state.canSave,
                 )
 
-                CoFlowEditDeleteButton(
-                    text = stringResource(R.string.edit_task_delete_button),
-                    onClick = {
-                        focusManager.clearFocus()
-                        onDeleteClick()
-                    },
-                    modifier = Modifier.weight(1f),
-                )
+                // Поля формы прокручиваются, а кнопки остаются внизу экрана.
+                Column(
+                    modifier =
+                        Modifier
+                            .weight(1f)
+                            .fillMaxWidth()
+                            .verticalScroll(rememberScrollState()),
+                    verticalArrangement = Arrangement.spacedBy(12.dp),
+                ) {
+                    CoFlowGlassTextField(
+                        label = stringResource(R.string.creation_task_name_label),
+                        value = state.title,
+                        onValueChange = onTitleChange,
+                        placeholder = stringResource(R.string.creation_task_name_placeholder),
+                    )
+
+                    CoFlowGlassTextField(
+                        label = stringResource(R.string.creation_task_description_label),
+                        value = state.description,
+                        onValueChange = onDescriptionChange,
+                        placeholder = stringResource(R.string.creation_task_description_placeholder),
+                        singleLine = false,
+                        maxLength = 250,
+                    )
+
+                    CoFlowGlassTextField(
+                        label = stringResource(R.string.creation_task_assignee_label),
+                        value = state.assignees,
+                        onValueChange = onAssigneesChange,
+                        placeholder = stringResource(R.string.creation_task_assignee_placeholder),
+                        leadingIcon = "person",
+                        trailingIcon = "chevron",
+                        onClick = onNavigateToAssignees,
+                    )
+
+                    CoFlowGlassTextField(
+                        label = stringResource(R.string.creation_task_project_label),
+                        value = state.project,
+                        onValueChange = onProjectChange,
+                        placeholder = stringResource(R.string.creation_task_project_placeholder),
+                        leadingIcon = "folder",
+                        trailingIcon = "chevron",
+                        onClick = onNavigateToProject,
+                    )
+
+                    CoFlowGlassTextField(
+                        label = stringResource(R.string.creation_task_deadline_label),
+                        value = state.dueDate,
+                        onValueChange = onDueDateChange,
+                        placeholder = stringResource(R.string.creation_task_deadline_placeholder),
+                        leadingIcon = "calendar",
+                        trailingIcon = "chevron",
+                        onClick = onNavigateToDate,
+                        keyboardOptions =
+                            KeyboardOptions(
+                                keyboardType = KeyboardType.Text,
+                                imeAction = ImeAction.Done,
+                            ),
+                        keyboardActions =
+                            KeyboardActions(
+                                onDone = { focusManager.clearFocus() },
+                            ),
+                    )
+
+                    Spacer(modifier = Modifier.size(4.dp))
+                }
+
+                // Новые кнопки редактирования располагаются рядом.
+                Row(
+                    modifier =
+                        Modifier
+                            .fillMaxWidth()
+                            .padding(top = 8.dp, bottom = 16.dp),
+                    horizontalArrangement = Arrangement.spacedBy(12.dp),
+                ) {
+                    CoFlowEditSaveButton(
+                        text = stringResource(R.string.edit_task_save_button),
+                        onClick = {
+                            focusManager.clearFocus()
+                            onSaveClick()
+                        },
+                        modifier = Modifier.weight(1f),
+                        enabled = state.canSave,
+                    )
+
+                    CoFlowEditDeleteButton(
+                        text = stringResource(R.string.edit_task_delete_button),
+                        onClick = {
+                            focusManager.clearFocus()
+                            onDeleteClick()
+                        },
+                        modifier = Modifier.weight(1f),
+                    )
+                }
             }
         }
     }
