@@ -159,6 +159,15 @@ fun EditTaskScreen(
                         .padding(top = 8.dp, bottom = 16.dp),
                 horizontalArrangement = Arrangement.spacedBy(12.dp),
             ) {
+                CoFlowEditDeleteButton(
+                    text = stringResource(R.string.edit_task_delete_button),
+                    onClick = {
+                        focusManager.clearFocus()
+                        onDeleteClick()
+                    },
+                    modifier = Modifier.weight(1f),
+                )
+
                 CoFlowEditSaveButton(
                     text = stringResource(R.string.edit_task_save_button),
                     onClick = {
@@ -167,15 +176,6 @@ fun EditTaskScreen(
                     },
                     modifier = Modifier.weight(1f),
                     enabled = state.canSave,
-                )
-
-                CoFlowEditDeleteButton(
-                    text = stringResource(R.string.edit_task_delete_button),
-                    onClick = {
-                        focusManager.clearFocus()
-                        onDeleteClick()
-                    },
-                    modifier = Modifier.weight(1f),
                 )
             }
         }

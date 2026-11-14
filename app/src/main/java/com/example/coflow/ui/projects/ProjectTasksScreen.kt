@@ -73,6 +73,7 @@ fun ProjectTasksRoute(
     onNavigateToTasks: () -> Unit,
     onNavigateToProjects: () -> Unit,
     onNavigateToProfile: () -> Unit,
+    onNavigateToProjectDetail: (String) -> Unit,
     viewModel: ProjectTasksViewModel =
         viewModel(
             factory =
@@ -91,6 +92,7 @@ fun ProjectTasksRoute(
         onNavigateToTasks = onNavigateToTasks,
         onNavigateToProjects = onNavigateToProjects,
         onNavigateToProfile = onNavigateToProfile,
+        onNavigateToProjectDetail = onNavigateToProjectDetail,
         onGroupingChange = viewModel::onGroupingChange,
         onFilterChange = viewModel::onFilterChange,
         onToggleGroup = viewModel::onToggleGroup,
@@ -106,6 +108,7 @@ fun ProjectTasksScreen(
     onNavigateToTasks: () -> Unit,
     onNavigateToProjects: () -> Unit,
     onNavigateToProfile: () -> Unit,
+    onNavigateToProjectDetail: (String) -> Unit,
     onGroupingChange: (ProjectTaskGrouping) -> Unit,
     onFilterChange: (ProjectTaskFilterType) -> Unit,
     onToggleGroup: (String) -> Unit,
@@ -125,7 +128,7 @@ fun ProjectTasksScreen(
                 trailingContent = {
                     CoFlowGlassIconButton(
                         iconName = "info",
-                        onClick = { /* TODO: Информация о проекте */ },
+                        onClick = { onNavigateToProjectDetail(state.projectId) },
                     )
                 },
             )
@@ -610,6 +613,7 @@ private fun ProjectTasksScreenPreview() {
             onGroupingChange = {},
             onFilterChange = {},
             onToggleGroup = {},
+            onNavigateToProjectDetail = {},
         )
     }
 }

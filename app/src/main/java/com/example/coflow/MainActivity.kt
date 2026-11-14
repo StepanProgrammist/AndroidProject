@@ -23,8 +23,11 @@ import androidx.navigation.navArgument
 import com.example.coflow.repositories.FirebaseAuthRepositoryImpl
 import com.example.coflow.ui.auth.AuthRoute
 import com.example.coflow.ui.projects.CreateProjectRoute
+import com.example.coflow.ui.projects.EditProjectRoute
+import com.example.coflow.ui.projects.ProjectDetailRoute
 import com.example.coflow.ui.projects.ProjectTasksRoute
 import com.example.coflow.ui.projects.ProjectsRoute
+import com.example.coflow.ui.projects.ProjectsViewModel
 import com.example.coflow.ui.tasks.ChooseAssigneeRoute
 import com.example.coflow.ui.tasks.ChooseDateRoute
 import com.example.coflow.ui.tasks.ChooseProjectRoute
@@ -45,8 +48,11 @@ object Screen {
     const val CHOOSE_DATE = "choose_date"
     const val TASK_DETAIL = "task_detail/{taskId}"
     const val PROJECTS = "projects"
+    const val PROJECT_DETAIL = "project_detail/{projectId}"
     const val CREATE_PROJECT = "create_project"
     const val EDIT_TASK = "edit_task/{taskId}"
+
+    const val EDIT_PROJECT = "edit_project/{projectId}"
     const val PROJECT_TASKS = "project_tasks/{projectId}"
 }
 
@@ -101,6 +107,43 @@ class MainActivity : ComponentActivity() {
                                 )
                             }
 
+                            // Просмотр деталей проекта
+                            composable(
+                                route = Screen.PROJECT_DETAIL,
+                                arguments =
+                                    listOf(
+                                        navArgument("projectId") {
+                                            type = NavType.StringType
+                                        },
+                                    ),
+                            ) {
+                                ProjectDetailRoute(
+                                    onNavigateBack = { navController.popBackStack() },
+                                    onNavigateToEdit = { projectId -> navController.navigate("edit_project/$projectId") },
+                                )
+                            }
+
+                            // Редактирование проекта
+                            composable(
+                                route = Screen.EDIT_PROJECT,
+                                arguments =
+                                    listOf(
+                                        navArgument("projectId") {
+                                            type = NavType.StringType
+                                        },
+                                    ),
+                            ) {
+                                EditProjectRoute(
+                                    onNavigateBack = { navController.popBackStack() },
+                                    onProjectSaved = {
+                                        navController.popBackStack()
+                                    },
+                                    onProjectDeleted = {
+                                        navController.popBackStack()
+                                    },
+                                )
+                            }
+
                             // Экран задач проекта
                             composable(
                                 route = Screen.PROJECT_TASKS,
@@ -108,14 +151,14 @@ class MainActivity : ComponentActivity() {
                             ) { backStackEntry ->
                                 ProjectTasksRoute(
                                     onBackClick = { navController.popBackStack() },
-                                    // ДЕЛАЕМ КНОПКУ ПУСТОЙ:
-                                    onNavigateToCreateTask = { /* Заглушка */ },
+                                    onNavigateToCreateTask = { "create_task" },
                                     onNavigateToTaskDetail = { taskId ->
                                         navController.navigate("task_detail/$taskId")
                                     },
                                     onNavigateToTasks = { navController.navigateToTab(Screen.TASKS) },
                                     onNavigateToProjects = { navController.popBackStack() },
                                     onNavigateToProfile = { /* TODO: Профиль */ },
+                                    onNavigateToProjectDetail = { projectId -> navController.navigate("project_detail/$projectId") },
                                 )
                             }
 
