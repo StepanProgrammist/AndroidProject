@@ -23,6 +23,7 @@ import androidx.navigation.navArgument
 import com.example.coflow.repositories.FirebaseAuthRepositoryImpl
 import com.example.coflow.ui.auth.AuthRoute
 import com.example.coflow.ui.projects.CreateProjectRoute
+import com.example.coflow.ui.projects.ProjectTasksRoute
 import com.example.coflow.ui.projects.ProjectsRoute
 import com.example.coflow.ui.tasks.ChooseAssigneeRoute
 import com.example.coflow.ui.tasks.ChooseDateRoute
@@ -46,6 +47,7 @@ object Screen {
     const val PROJECTS = "projects"
     const val CREATE_PROJECT = "create_project"
     const val EDIT_TASK = "edit_task/{taskId}"
+    const val PROJECT_TASKS = "project_tasks/{projectId}"
 }
 
 class MainActivity : ComponentActivity() {
@@ -93,6 +95,27 @@ class MainActivity : ComponentActivity() {
                                 ProjectsRoute(
                                     onNavigateToCreateProject = { navController.navigate(Screen.CREATE_PROJECT) },
                                     onNavigateToTasks = { navController.navigateToTab(Screen.TASKS) },
+                                    onNavigateToProjectTasks = { projectId ->
+                                        navController.navigate("project_tasks/$projectId")
+                                    },
+                                )
+                            }
+
+                            // Экран задач проекта
+                            composable(
+                                route = Screen.PROJECT_TASKS,
+                                arguments = listOf(navArgument("projectId") { type = NavType.StringType }),
+                            ) { backStackEntry ->
+                                ProjectTasksRoute(
+                                    onBackClick = { navController.popBackStack() },
+                                    // ДЕЛАЕМ КНОПКУ ПУСТОЙ:
+                                    onNavigateToCreateTask = { /* Заглушка */ },
+                                    onNavigateToTaskDetail = { taskId ->
+                                        navController.navigate("task_detail/$taskId")
+                                    },
+                                    onNavigateToTasks = { navController.navigateToTab(Screen.TASKS) },
+                                    onNavigateToProjects = { navController.popBackStack() },
+                                    onNavigateToProfile = { /* TODO: Профиль */ },
                                 )
                             }
 
