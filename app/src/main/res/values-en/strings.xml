@@ -13,7 +13,6 @@
         <string name="choose_assignee_header">Add assignee</string>
         <string name="task_description_header">Task</string>
         <string name="edit_task_header">Edit task</string>
-        <string name="edit_project_header">Edit project</string>
 
 
         <!-- Поля ввода -->
@@ -206,23 +205,4 @@
     <string name="project_tasks_info_desc">Project info</string>
     <string name="project_tasks_filter_all">All</string>
     <string name="project_tasks_mine_badge">Mine</string>
-
-    <string name="project_description_header">Project Details</string>
-    <string name="project_description_label">Description</string>
-    <string name="project_owner_label">Owner</string>
-    <string name="participants_header">Participants</string>
-    <string name="search_participants_placeholder">Search...</string>
-    <string name="participants_placeholder">No participants yet</string>
-
-    <!-- Project statuses -->
-    <string name="project_status_archived">Archived</string>
-
-    <!-- Roles -->
-    <string name="role_owner">Owner</string>
-    <string name="role_member">Member</string>
-
-    <!-- Edit oles -->
-    <string name="change_role">Change role</string>
-    <string name="delete_member">Delete</string>
-
 </resources>
