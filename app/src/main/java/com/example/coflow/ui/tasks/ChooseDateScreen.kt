@@ -171,8 +171,7 @@ fun ChooseDateScreen(
                     CalendarGrid(
                         currentMonth = currentMonth,
                         selectedDate = selectedDate,
-                    )
-                    { date ->
+                    ) { date ->
                         if (date.month == currentMonth.month) onDateSelected(date)
                     }
                 }

@@ -108,25 +108,26 @@ class FirebaseTaskRepositoryImpl(
      */
     override fun observeById(id: String): Flow<Result<TaskModel>> =
         callbackFlow {
-            val registration = taskCollection
-                .document(id)
-                .addSnapshotListener { snapshot, error ->
-                    if (error != null) {
-                        trySend(
-                            Result.failure(
-                                Exception(error.message ?: "Ошибка наблюдения за задачей"),
-                            ),
-                        )
-                        close()
-                    } else {
-                        val task = snapshot?.let { fromDocument(it) }
-                        if (task == null) {
-                            trySend(Result.failure(Exception("Задача не найдена")))
+            val registration =
+                taskCollection
+                    .document(id)
+                    .addSnapshotListener { snapshot, error ->
+                        if (error != null) {
+                            trySend(
+                                Result.failure(
+                                    Exception(error.message ?: "Ошибка наблюдения за задачей"),
+                                ),
+                            )
+                            close()
                         } else {
-                            trySend(Result.success(task))
+                            val task = snapshot?.let { fromDocument(it) }
+                            if (task == null) {
+                                trySend(Result.failure(Exception("Задача не найдена")))
+                            } else {
+                                trySend(Result.success(task))
+                            }
                         }
                     }
-                }
             awaitClose { registration.remove() }
         }
 
