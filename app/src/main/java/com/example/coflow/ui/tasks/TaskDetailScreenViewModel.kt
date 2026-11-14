@@ -128,7 +128,8 @@ class TaskDetailScreenViewModel(
             val isOverdue =
                 task.deadline.isBefore(
                     LocalDateTime.now(ZoneOffset.UTC),
-                ) && task.status != TaskStatus.DONE
+                ) &&
+                    task.status != TaskStatus.DONE
             val formattedDate = task.deadline.format(DateTimeFormatter.ofPattern("dd.MM.yy"))
 
             val isAuthor = task.authorId == currentUid
