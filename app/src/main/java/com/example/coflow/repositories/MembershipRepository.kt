@@ -1,9 +1,9 @@
 package com.example.coflow.repositories
 
 import com.example.coflow.models.MembershipModel
+import kotlinx.coroutines.flow.Flow
 import com.example.coflow.repositories.dto.MembershipAddDto
 import com.example.coflow.repositories.dto.MembershipUpdateDto
-import kotlinx.coroutines.flow.Flow
 
 /**
  * Членство пользователя в проекте (коллекция `memberships`).

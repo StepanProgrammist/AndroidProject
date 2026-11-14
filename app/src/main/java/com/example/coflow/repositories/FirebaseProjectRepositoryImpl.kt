@@ -158,8 +158,7 @@ class FirebaseProjectRepositoryImpl(
         }
 
         val projectIds =
-            snapshot
-                ?.documents
+            snapshot?.documents
                 ?.mapNotNull { it.getString("projectId") }
                 ?.filter { it.isNotBlank() }
                 ?.toSet()
