@@ -3,7 +3,7 @@ import java.util.Base64
 plugins {
     alias(libs.plugins.android.application)
     alias(libs.plugins.kotlin.compose)
-
+    id("org.jlleitschuh.gradle.ktlint")
     id("com.google.gms.google-services")
 }
 

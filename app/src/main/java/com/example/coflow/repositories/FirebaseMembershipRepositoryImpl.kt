@@ -7,10 +7,10 @@ import com.example.coflow.repositories.dto.MembershipUpdateDto
 import com.google.firebase.firestore.CollectionReference
 import com.google.firebase.firestore.DocumentSnapshot
 import com.google.firebase.firestore.FirebaseFirestore
-import kotlinx.coroutines.tasks.await
 import kotlinx.coroutines.channels.awaitClose
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.callbackFlow
+import kotlinx.coroutines.tasks.await
 
 /**
  * Firestore-реализация членства.
@@ -123,27 +123,28 @@ class FirebaseMembershipRepositoryImpl(
      */
     override fun observeByProjectId(id: String): Flow<Result<List<MembershipModel>>> =
         callbackFlow {
-            val registration = membershipCollection
-                .whereEqualTo("projectId", id)
-                .addSnapshotListener { snapshot, error ->
-                    if (error != null) {
-                        trySend(
-                            Result.failure(
-                                Exception(error.message ?: "Ошибка наблюдения за членством"),
-                            ),
-                        )
-                        close()
-                    } else {
-                        trySend(
-                            Result.success(
-                                snapshot
-                                    ?.documents
-                                    ?.mapNotNull { it.toMembershipModel() }
-                                    .orEmpty(),
-                            ),
-                        )
+            val registration =
+                membershipCollection
+                    .whereEqualTo("projectId", id)
+                    .addSnapshotListener { snapshot, error ->
+                        if (error != null) {
+                            trySend(
+                                Result.failure(
+                                    Exception(error.message ?: "Ошибка наблюдения за членством"),
+                                ),
+                            )
+                            close()
+                        } else {
+                            trySend(
+                                Result.success(
+                                    snapshot
+                                        ?.documents
+                                        ?.mapNotNull { it.toMembershipModel() }
+                                        .orEmpty(),
+                                ),
+                            )
+                        }
                     }
-                }
             awaitClose { registration.remove() }
         }
 }

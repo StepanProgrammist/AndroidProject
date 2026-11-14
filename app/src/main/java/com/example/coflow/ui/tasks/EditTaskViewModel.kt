@@ -1,12 +1,9 @@
 package com.example.coflow.ui.tasks
 
-import android.util.Log
-import androidx.compose.runtime.Composable
 import androidx.lifecycle.SavedStateHandle
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.example.coflow.R
-import com.example.coflow.models.TaskStatus
 import com.example.coflow.repositories.AuthRepository
 import com.example.coflow.repositories.FirebaseAuthRepositoryImpl
 import com.example.coflow.repositories.FirebaseProjectRepositoryImpl
@@ -21,8 +18,6 @@ import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
-import java.time.LocalDateTime
-import java.time.ZoneOffset
 import java.time.format.DateTimeFormatter
 
 data class Task(
@@ -138,7 +133,6 @@ class EditTaskViewModel(
             }
         }
     }
-
 
     fun onTitleChange(newTitle: String) {
         _state.update { it.copy(title = newTitle, canSave = newTitle.isNotBlank() && it.dueDate.isNotBlank()) }

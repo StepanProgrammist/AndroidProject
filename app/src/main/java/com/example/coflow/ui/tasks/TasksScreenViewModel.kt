@@ -193,7 +193,8 @@ class TasksScreenViewModel(
                                     isOverdue =
                                         task.deadline.isBefore(
                                             LocalDateTime.now(ZoneOffset.UTC),
-                                        ) && task.status != TaskStatus.DONE,
+                                        ) &&
+                                            task.status != TaskStatus.DONE,
                                     isMine = task.authorId == uid || task.assigneeId == uid,
                                 )
                             }
