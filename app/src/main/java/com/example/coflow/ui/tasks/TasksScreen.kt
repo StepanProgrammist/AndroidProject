@@ -414,7 +414,7 @@ private fun TaskGroupCard(
             }
             Spacer(Modifier.weight(1f))
             CoFlowIcon(
-                name = if (group.isExpanded) "chevron_up" else "chevron",
+                name = if (group.isExpanded) "chevron_down" else "chevron_left",
                 modifier = Modifier.size(18.dp),
                 color = CoFlowColors.Blue,
             )
@@ -659,7 +659,7 @@ private fun SortFilterPanel(
                             maxLines = 1,
                         )
                         CoFlowIcon(
-                            name = "chevron_down",
+                            name = if (expanded) "chevron_up" else "chevron",
                             modifier = Modifier.size(14.dp),
                             color = CoFlowColors.Blue,
                         )
@@ -725,7 +725,7 @@ private fun SortFilterPanel(
                         )
                         Spacer(Modifier.width(3.dp))
                         CoFlowIcon(
-                            name = "chevron_down",
+                            name = if (expanded) "chevron_up" else "chevron",
                             modifier = Modifier.size(14.dp),
                             color = CoFlowColors.Blue,
                         )
