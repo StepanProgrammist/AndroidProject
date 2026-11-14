@@ -13,6 +13,7 @@
     <string name="choose_assignee_header">Добавить исполнителя</string>
     <string name="edit_task_header">Редактирование задачи</string>
     <string name="task_description_header">Задача</string>
+    <string name="edit_project_header">Редактирование проекта</string>
 
     <!-- Поля ввода -->
     <string name="auth_label_username">Имя пользователя</string>
@@ -216,4 +217,23 @@
     <string name="project_tasks_info_desc">Информация о проекте</string>
     <string name="project_tasks_filter_all">Все</string>
     <string name="project_tasks_mine_badge">Моя</string>
+
+    <!-- Строки для экрана деталей проекта -->
+    <string name="project_description_header">Детали проекта</string>
+    <string name="project_description_label">Описание</string>
+    <string name="project_owner_label">Владелец</string>
+    <string name="participants_header">Участники</string>
+    <string name="search_participants_placeholder">Поиск...</string>
+    <string name="participants_placeholder">Пока нет участников</string>
+
+    <!-- Статусы проектов -->
+    <string name="project_status_archived">В архиве</string>
+
+    <!-- Роли -->
+    <string name="role_owner">Владелец</string>
+    <string name="role_member">Участник</string>
+
+    <!-- Edit oles -->
+    <string name="change_role">Сменить роль</string>
+    <string name="delete_member">Удалить</string>
 </resources>

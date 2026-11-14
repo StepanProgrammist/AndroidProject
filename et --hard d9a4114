@@ -1,0 +1,41 @@
+[33mefd7c05[m[33m ([m[1;36mHEAD[m[33m -> [m[1;32mTorzhevskiy/fix/MyTasksAndTaskDescriptionWithStrings[m[33m)[m HEAD@{0}: rebase (finish): returning to refs/heads/Torzhevskiy/fix/MyTasksAndTaskDescriptionWithStrings
+[33mefd7c05[m[33m ([m[1;36mHEAD[m[33m -> [m[1;32mTorzhevskiy/fix/MyTasksAndTaskDescriptionWithStrings[m[33m)[m HEAD@{1}: rebase (continue): Исправил ViewModel и Screen Tasks и TAskDetail, заменив использолвание текста на использование strings и strings id
+[33mc8a3a20[m[33m ([m[1;31mui/Torzhevskiy/fix/MyTasksAndTaskDescriptionWithStrings[m[33m, [m[1;31morigin/develop[m[33m)[m HEAD@{2}: pull --rebase ui Torzhevskiy/fix/MyTasksAndTaskDescriptionWithStrings (start): checkout c8a3a20858846b0cd089ed0e9f13334a76c0f6c6
+[33md9a4114[m HEAD@{3}: commit: Исправил ViewModel и Screen Tasks и TAskDetail, заменив использолвание текста на использование strings и strings id
+[33m375c2f0[m[33m ([m[1;31mui/develop[m[33m)[m HEAD@{4}: checkout: moving from Torzhevskiy/feature/OpenTaskDetailAndTasksScreen to Torzhevskiy/fix/MyTasksAndTaskDescriptionWithStrings
+[33m2076b78[m[33m ([m[1;31mui/Torzhevskiy/feature/OpenTaskDetailAndTasksScreen[m[33m, [m[1;32mTorzhevskiy/feature/OpenTaskDetailAndTasksScreen[m[33m)[m HEAD@{5}: checkout: moving from Torzhevskiy/fix/MyTasksAndTaskDescriptionWithStrings to Torzhevskiy/feature/OpenTaskDetailAndTasksScreen
+[33m375c2f0[m[33m ([m[1;31mui/develop[m[33m)[m HEAD@{6}: reset: moving to HEAD
+[33m375c2f0[m[33m ([m[1;31mui/develop[m[33m)[m HEAD@{7}: checkout: moving from Torzhevskiy/feature/OpenTaskDetailAndTasksScreen to Torzhevskiy/fix/MyTasksAndTaskDescriptionWithStrings
+[33m2076b78[m[33m ([m[1;31mui/Torzhevskiy/feature/OpenTaskDetailAndTasksScreen[m[33m, [m[1;32mTorzhevskiy/feature/OpenTaskDetailAndTasksScreen[m[33m)[m HEAD@{8}: commit: feat(тг#2): написал открытие окон (TaskDetailScreen, TasksScreen) с мок данными
+[33m9cec057[m HEAD@{9}: commit (merge): .
+[33m0b5d280[m[33m ([m[1;31mui/torzhevskiy/fix/TaskWithStrings[m[33m, [m[1;32mTorzhevskiy/fix/TaskWithStrings[m[33m)[m HEAD@{10}: checkout: moving from Torzhevskiy/fix/TaskWithStrings to Torzhevskiy/feature/OpenTaskDetailAndTasksScreen
+[33m0b5d280[m[33m ([m[1;31mui/torzhevskiy/fix/TaskWithStrings[m[33m, [m[1;32mTorzhevskiy/fix/TaskWithStrings[m[33m)[m HEAD@{11}: commit: Переделал описание задачи с использованием values/strings
+[33m8a1726b[m[33m ([m[1;31mui/torzhevskiy/fix/SelectedAssignees[m[33m, [m[1;32mTorzhevskiy/fix/SelectedAssignees[m[33m)[m HEAD@{12}: checkout: moving from Torzhevskiy/fix/SelectedAssignees to Torzhevskiy/fix/TaskWithStrings
+[33m8a1726b[m[33m ([m[1;31mui/torzhevskiy/fix/SelectedAssignees[m[33m, [m[1;32mTorzhevskiy/fix/SelectedAssignees[m[33m)[m HEAD@{13}: commit: Переделал надпись с количеством выбранных исполнителей через values/strings с применением plurals
+[33m09f023a[m HEAD@{14}: pull ui develop: Fast-forward
+[33m0c555f7[m[33m ([m[1;31mui/torzhevskiy/fix/ScreensWithStringsValues[m[33m, [m[1;31mui/Torzhevskiy/fix/ScreensWithStringsValues[m[33m, [m[1;32mTorzhevskiy/fix/ScreensWithStringsValues[m[33m)[m HEAD@{15}: checkout: moving from Torzhevskiy/fix/ScreensWithStringsValues to Torzhevskiy/fix/SelectedAssignees
+[33m0c555f7[m[33m ([m[1;31mui/torzhevskiy/fix/ScreensWithStringsValues[m[33m, [m[1;31mui/Torzhevskiy/fix/ScreensWithStringsValues[m[33m, [m[1;32mTorzhevskiy/fix/ScreensWithStringsValues[m[33m)[m HEAD@{16}: commit: Передалал выбор исполнителей при создании задачи с помощью values/strings
+[33m168938f[m HEAD@{17}: commit: Передалал выбор даты окончания при создании задачи с помощью values/strings
+[33m5b683d4[m HEAD@{18}: commit: Передалал выбор проекта при создании задачи с помощью values/strings
+[33mfa9a9dc[m HEAD@{19}: commit: Передалал создание задачи с помощью values/strings
+[33m5eae778[m HEAD@{20}: commit: Переименовал немного файлы, передалал мои задачи с помощью values/strings
+[33m9f19799[m HEAD@{21}: pull ui develop: Fast-forward
+[33m5b8910c[m[33m ([m[1;31mui/main[m[33m, [m[1;31mui/HEAD[m[33m, [m[1;31morigin/main[m[33m, [m[1;31morigin/HEAD[m[33m)[m HEAD@{22}: checkout: moving from Torzhevskiy/design/CreateTask to Torzhevskiy/fix/ScreensWithStringsValues
+[33mad41b35[m[33m ([m[1;31morigin/Torzhevskiy/design/CreateTask[m[33m, [m[1;32mTorzhevskiy/design/CreateTask[m[33m)[m HEAD@{23}: commit: Переделал через strings
+[33m5877f62[m HEAD@{24}: commit: Переделал заголовки и починил переход к выбору даты, исполнителей, проекта
+[33m1ca22ab[m HEAD@{25}: commit: Переписал шаблоны и использующие их формы
+[33mb2cf93e[m HEAD@{26}: commit: Переписал ошибку несовпадения паролей через values/strings
+[33m3374ead[m HEAD@{27}: commit: Убрал лишний текст и переписал имя пользователя, используя values/strings
+[33md11e86c[m HEAD@{28}: commit: Переписал авторизацию с использованием шаблонов и добавил на авторизацию имя пользователя
+[33m0531588[m HEAD@{29}: commit: Добавил множественный выбор в фильтрах
+[33mf973344[m HEAD@{30}: commit: Разбил справочник на несколько файлов, создалл шаблоны элементов интерфейса и переписал реализацию форм
+[33m2b98d39[m HEAD@{31}: commit: С Валерием сделали превью для моих задач. Создали формы для создания задач, добавления исполнителей, выбора даты, выбора проекта. Сделали связь между формами с помощью clickable
+[33m5d97d15[m HEAD@{32}: commit: Начало
+[33m6a2cc83[m HEAD@{33}: reset: moving to origin/develop
+[33ma922606[m HEAD@{34}: reset: moving to origin/Torzhevskiy/main
+[33m3e53c68[m[33m ([m[1;32mmaster[m[33m, [m[1;32mTorzhevskiy/main[m[33m)[m HEAD@{35}: checkout: moving from Torzhevskiy/main to Torzhevskiy/design/CreateTask
+[33m3e53c68[m[33m ([m[1;32mmaster[m[33m, [m[1;32mTorzhevskiy/main[m[33m)[m HEAD@{36}: checkout: moving from master to Torzhevskiy/main
+[33m3e53c68[m[33m ([m[1;32mmaster[m[33m, [m[1;32mTorzhevskiy/main[m[33m)[m HEAD@{37}: rebase (abort): returning to refs/heads/master
+[33ma7fb6dd[m HEAD@{38}: commit: Говно
+[33m82452be[m HEAD@{39}: pull --rebase origin main --allow-unrelated-histories (start): checkout 82452bef7291779942223c1a420c7b303894c030
+[33m3e53c68[m[33m ([m[1;32mmaster[m[33m, [m[1;32mTorzhevskiy/main[m[33m)[m HEAD@{40}: commit (initial): Хуйня
