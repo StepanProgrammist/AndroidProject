@@ -58,8 +58,6 @@ object Screen {
 
     const val ADD_PROJECT_PARTICIPANT = "add_project_participant?projectId={projectId}"
 
-    fun addProjectParticipant(projectId: String = "") =
-        "add_project_participant?projectId=$projectId"
 }
 
 class MainActivity : ComponentActivity() {
@@ -177,7 +175,7 @@ class MainActivity : ComponentActivity() {
                                     onBackClick = { navController.popBackStack() },
                                     onProjectCreated = { navController.popBackStack() },
                                     onAddParticipantClick = {
-                                        navController.navigate(Screen.addProjectParticipant())
+                                        navController.navigate("add_project_participant?projectId=")
                                     },
                                     addParticipantViewModel = addParticipantViewModel,
                                 )
