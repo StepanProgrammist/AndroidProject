@@ -3,6 +3,8 @@ package com.example.coflow
 import android.annotation.SuppressLint
 import android.os.Bundle
 import androidx.activity.ComponentActivity
+import androidx.activity.OnBackPressedCallback
+import androidx.activity.compose.LocalOnBackPressedDispatcherOwner
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
 import androidx.compose.foundation.LocalIndication
@@ -10,6 +12,7 @@ import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.navigationBarsPadding
 import androidx.compose.runtime.CompositionLocalProvider
+import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -102,6 +105,26 @@ class MainActivity : ComponentActivity() {
                         val navBackStackEntry by navController.currentBackStackEntryAsState()
                         val currentRoute = navBackStackEntry?.destination?.route
 
+                        val backDispatcher = LocalOnBackPressedDispatcherOwner.current?.onBackPressedDispatcher
+                        DisposableEffect(backDispatcher, navController) {
+                            val callback = object : OnBackPressedCallback(true) {
+                                override fun handleOnBackPressed() {
+                                    val route = navController.currentDestination?.route
+                                    if (route == Screen.TASKS || navController.previousBackStackEntry == null) {
+                                        moveTaskToBack(true)
+                                    } else if (route == Screen.PROJECTS) {
+                                        navController.navigateToTab(Screen.TASKS)
+                                    } else {
+                                        navController.safePopBackStack()
+                                    }
+                                }
+                            }
+                            backDispatcher?.addCallback(callback)
+                            onDispose {
+                                callback.remove()
+                            }
+                        }
+
                         val showBottomBar =
                             currentRoute == Screen.TASKS ||
                                 currentRoute == Screen.PROJECTS ||
@@ -149,7 +172,7 @@ class MainActivity : ComponentActivity() {
                                         ),
                                 ) {
                                     ProjectDetailRoute(
-                                        onNavigateBack = { navController.popBackStack() },
+                                        onNavigateBack = { navController.safePopBackStack() },
                                         onNavigateToEdit = { projectId -> navController.navigate("edit_project/$projectId") },
                                     )
                                 }
@@ -165,12 +188,12 @@ class MainActivity : ComponentActivity() {
                                         ),
                                 ) {
                                     EditProjectRoute(
-                                        onNavigateBack = { navController.popBackStack() },
+                                        onNavigateBack = { navController.safePopBackStack() },
                                         onProjectSaved = {
-                                            navController.popBackStack()
+                                            navController.safePopBackStack()
                                         },
                                         onProjectDeleted = {
-                                            navController.popBackStack()
+                                            navController.safePopBackStack()
                                         },
                                     )
                                 }
@@ -186,13 +209,13 @@ class MainActivity : ComponentActivity() {
                                         ),
                                 ) { backStackEntry ->
                                     ProjectTasksRoute(
-                                        onBackClick = { navController.popBackStack() },
+                                        onBackClick = { navController.safePopBackStack() },
                                         onNavigateToCreateTask = { navController.navigate("create_task") },
                                         onNavigateToTaskDetail = { taskId ->
                                             navController.navigate("task_detail/$taskId")
                                         },
                                         onNavigateToTasks = { navController.navigateToTab(Screen.TASKS) },
-                                        onNavigateToProjects = { navController.popBackStack() },
+                                        onNavigateToProjects = { navController.safePopBackStack() },
                                         onNavigateToProfile = { /* TODO: Профиль */ },
                                         onNavigateToProjectDetail = { projectId ->
                                             navController.navigate(
@@ -208,8 +231,8 @@ class MainActivity : ComponentActivity() {
                                         viewModel(viewModelStoreOwner = backStackEntry)
 
                                     CreateProjectRoute(
-                                        onBackClick = { navController.popBackStack() },
-                                        onProjectCreated = { navController.popBackStack() },
+                                        onBackClick = { navController.safePopBackStack() },
+                                        onProjectCreated = { navController.safePopBackStack() },
                                         onAddParticipantClick = {
                                             navController.navigate(Screen.addProjectParticipant())
                                         },
@@ -244,22 +267,22 @@ class MainActivity : ComponentActivity() {
 
                                             AddParticipantRoute(
                                                 projectId = "",
-                                                onBackClick = { navController.popBackStack() },
-                                                onInvited = { navController.popBackStack() },
+                                                onBackClick = { navController.safePopBackStack() },
+                                                onInvited = { navController.safePopBackStack() },
                                                 viewModel = addParticipantViewModel,
                                             )
                                         } else {
                                             AddParticipantRoute(
                                                 projectId = "",
-                                                onBackClick = { navController.popBackStack() },
-                                                onInvited = { navController.popBackStack() },
+                                                onBackClick = { navController.safePopBackStack() },
+                                                onInvited = { navController.safePopBackStack() },
                                             )
                                         }
                                     } else {
                                         AddParticipantRoute(
                                             projectId = projectId,
-                                            onBackClick = { navController.popBackStack() },
-                                            onInvited = { navController.popBackStack() },
+                                            onBackClick = { navController.safePopBackStack() },
+                                            onInvited = { navController.safePopBackStack() },
                                         )
                                     }
                                 }
@@ -275,7 +298,7 @@ class MainActivity : ComponentActivity() {
                                         ),
                                 ) {
                                     TaskDetailRoute(
-                                        onNavigateBack = { navController.popBackStack() },
+                                        onNavigateBack = { navController.safePopBackStack() },
                                         onNavigateToEdit = { taskId -> navController.navigate("edit_task/$taskId") },
                                     )
                                 }
@@ -283,10 +306,10 @@ class MainActivity : ComponentActivity() {
                                 // Создание задачи
                                 composable(Screen.CREATE_TASK) {
                                     CreateTaskRoute(
-                                        onBackClick = { navController.popBackStack() },
+                                        onBackClick = { navController.safePopBackStack() },
                                         onTaskCreated = {
                                             tasksViewModel.refresh()
-                                            navController.popBackStack()
+                                            navController.safePopBackStack()
                                         },
                                         onNavigateToAssignees = { navController.navigate(Screen.CHOOSE_ASSIGNEE) },
                                         onNavigateToProject = { navController.navigate(Screen.CHOOSE_PROJECT) },
@@ -302,14 +325,14 @@ class MainActivity : ComponentActivity() {
                                 ) { backStackEntry ->
                                     val taskId = backStackEntry.arguments?.getString("taskId").orEmpty()
                                     EditTaskRoute(
-                                        onNavigateBack = { navController.popBackStack() },
+                                        onNavigateBack = { navController.safePopBackStack() },
                                         onTaskSaved = {
                                             tasksViewModel.refresh()
-                                            navController.popBackStack()
+                                            navController.safePopBackStack()
                                         },
                                         onTaskDeleted = {
                                             tasksViewModel.refresh()
-                                            navController.popBackStack()
+                                            navController.safePopBackStack()
                                         },
                                         onNavigateToAssignees = { navController.navigate("edit_task/$taskId/assignees") },
                                         onNavigateToProject = { navController.navigate("edit_task/$taskId/project") },
@@ -331,12 +354,12 @@ class MainActivity : ComponentActivity() {
 
                                     ChooseAssigneeRoute(
                                         state = state,
-                                        onBackClick = { navController.popBackStack() },
+                                        onBackClick = { navController.safePopBackStack() },
                                         onSearchQueryChange = editViewModel::onAssigneeSearchQueryChange,
                                         onToggleAssignee = editViewModel::togglePendingAssignee,
                                         onConfirmSelection = { assignees ->
                                             editViewModel.confirmAssigneeSelection(assignees)
-                                            navController.popBackStack()
+                                            navController.safePopBackStack()
                                         },
                                     )
                                 }
@@ -355,12 +378,12 @@ class MainActivity : ComponentActivity() {
 
                                     ChooseDateRoute(
                                         state = state,
-                                        onBackClick = { navController.popBackStack() },
+                                        onBackClick = { navController.safePopBackStack() },
                                         onMonthChange = editViewModel::onCalendarMonthChange,
                                         onDateSelected = editViewModel::onDateSelected,
                                         onConfirmSelection = { date ->
                                             editViewModel.confirmDateSelection(date)
-                                            navController.popBackStack()
+                                            navController.safePopBackStack()
                                         },
                                     )
                                 }
@@ -379,12 +402,12 @@ class MainActivity : ComponentActivity() {
 
                                     ChooseProjectRoute(
                                         state = state,
-                                        onBackClick = { navController.popBackStack() },
+                                        onBackClick = { navController.safePopBackStack() },
                                         onSearchQueryChange = editViewModel::onProjectSearchQueryChange,
                                         onSelectProject = editViewModel::onPendingProjectChange,
                                         onConfirmSelection = { project ->
                                             editViewModel.confirmProjectSelection(project)
-                                            navController.popBackStack()
+                                            navController.safePopBackStack()
                                         },
                                     )
                                 }
@@ -394,12 +417,12 @@ class MainActivity : ComponentActivity() {
                                     val createState by createTaskViewModel.state.collectAsStateWithLifecycle()
                                     ChooseAssigneeRoute(
                                         state = createState,
-                                        onBackClick = { navController.popBackStack() },
+                                        onBackClick = { navController.safePopBackStack() },
                                         onSearchQueryChange = createTaskViewModel::onAssigneeSearchQueryChange,
                                         onToggleAssignee = createTaskViewModel::togglePendingAssignee,
                                         onConfirmSelection = { assignees ->
                                             createTaskViewModel.confirmAssigneeSelection(assignees)
-                                            navController.popBackStack()
+                                            navController.safePopBackStack()
                                         },
                                     )
                                 }
@@ -409,12 +432,12 @@ class MainActivity : ComponentActivity() {
                                     val createState by createTaskViewModel.state.collectAsStateWithLifecycle()
                                     ChooseProjectRoute(
                                         state = createState,
-                                        onBackClick = { navController.popBackStack() },
+                                        onBackClick = { navController.safePopBackStack() },
                                         onSearchQueryChange = createTaskViewModel::onProjectSearchQueryChange,
                                         onSelectProject = createTaskViewModel::onPendingProjectChange,
                                         onConfirmSelection = { project ->
                                             createTaskViewModel.confirmProjectSelection(project)
-                                            navController.popBackStack()
+                                            navController.safePopBackStack()
                                         },
                                     )
                                 }
@@ -424,12 +447,12 @@ class MainActivity : ComponentActivity() {
                                     val createState by createTaskViewModel.state.collectAsStateWithLifecycle()
                                     ChooseDateRoute(
                                         state = createState,
-                                        onBackClick = { navController.popBackStack() },
+                                        onBackClick = { navController.safePopBackStack() },
                                         onMonthChange = createTaskViewModel::onCalendarMonthChange,
                                         onDateSelected = createTaskViewModel::onDateSelected,
                                         onConfirmSelection = { date ->
                                             createTaskViewModel.confirmDateSelection(date)
-                                            navController.popBackStack()
+                                            navController.safePopBackStack()
                                         },
                                     )
                                 }
@@ -478,6 +501,12 @@ class MainActivity : ComponentActivity() {
             popUpTo(graph.findStartDestination().id) { saveState = true }
             launchSingleTop = true
             restoreState = true
+        }
+    }
+
+    private fun NavHostController.safePopBackStack() {
+        if (currentDestination?.route != Screen.TASKS && previousBackStackEntry != null) {
+            popBackStack()
         }
     }
 }
