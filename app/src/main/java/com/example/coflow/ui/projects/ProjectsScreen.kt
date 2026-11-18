@@ -182,8 +182,6 @@ fun ProjectsScreen(
                     // Кнопка "+" (FAB)
                     CoFlowFabButton(onClick = onNavigateToCreateProject, iconName = "folder_plus")
                 }
-
-//                Spacer(Modifier.height(7.dp))
             }
         }
     }

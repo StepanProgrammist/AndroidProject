@@ -1,9 +1,12 @@
 package com.example.coflow
 
 import android.annotation.SuppressLint
+import android.content.Context
+import android.content.ContextWrapper
 import android.os.Bundle
 import androidx.activity.ComponentActivity
 import androidx.activity.OnBackPressedCallback
+import androidx.activity.compose.BackHandler
 import androidx.activity.compose.LocalOnBackPressedDispatcherOwner
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
@@ -18,6 +21,7 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewmodel.compose.viewModel
@@ -105,20 +109,22 @@ class MainActivity : ComponentActivity() {
                         val navBackStackEntry by navController.currentBackStackEntryAsState()
                         val currentRoute = navBackStackEntry?.destination?.route
 
+                        val context = LocalContext.current
                         val backDispatcher = LocalOnBackPressedDispatcherOwner.current?.onBackPressedDispatcher
-                        DisposableEffect(backDispatcher, navController) {
-                            val callback = object : OnBackPressedCallback(true) {
-                                override fun handleOnBackPressed() {
-                                    val route = navController.currentDestination?.route
-                                    if (route == Screen.TASKS || navController.previousBackStackEntry == null) {
-                                        moveTaskToBack(true)
-                                    } else if (route == Screen.PROJECTS) {
-                                        navController.navigateToTab(Screen.TASKS)
-                                    } else {
-                                        navController.safePopBackStack()
+                        DisposableEffect(backDispatcher, navController, context) {
+                            val callback =
+                                object : OnBackPressedCallback(true) {
+                                    override fun handleOnBackPressed() {
+                                        val route = navController.currentDestination?.route
+                                        if (route == Screen.TASKS || route == Screen.PROJECTS ||
+                                            navController.previousBackStackEntry == null
+                                        ) {
+                                            context.findActivity()?.moveTaskToBack(true)
+                                        } else {
+                                            navController.safePopBackStack()
+                                        }
                                     }
                                 }
-                            }
                             backDispatcher?.addCallback(callback)
                             onDispose {
                                 callback.remove()
@@ -138,6 +144,9 @@ class MainActivity : ComponentActivity() {
                             ) {
                                 // Мои задачи
                                 composable(Screen.TASKS) {
+                                    BackHandler {
+                                        context.findActivity()?.moveTaskToBack(true)
+                                    }
                                     TasksRoute(
                                         viewModel = tasksViewModel,
                                         onNavigateToCreateTask = { navController.navigate(Screen.CREATE_TASK) },
@@ -152,6 +161,9 @@ class MainActivity : ComponentActivity() {
 
                                 // Проекты
                                 composable(Screen.PROJECTS) {
+                                    BackHandler {
+                                        context.findActivity()?.moveTaskToBack(true)
+                                    }
                                     ProjectsRoute(
                                         onNavigateToCreateProject = { navController.navigate(Screen.CREATE_PROJECT) },
                                         onNavigateToTasks = { navController.navigateToTab(Screen.TASKS) },
@@ -505,8 +517,17 @@ class MainActivity : ComponentActivity() {
     }
 
     private fun NavHostController.safePopBackStack() {
-        if (currentDestination?.route != Screen.TASKS && previousBackStackEntry != null) {
+        if (previousBackStackEntry != null && currentDestination?.route != Screen.PROJECTS) {
             popBackStack()
         }
+    }
+
+    private fun Context.findActivity(): ComponentActivity? {
+        var ctx = this
+        while (ctx is ContextWrapper) {
+            if (ctx is ComponentActivity) return ctx
+            ctx = ctx.baseContext
+        }
+        return null
     }
 }
