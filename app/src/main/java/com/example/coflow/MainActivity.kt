@@ -105,8 +105,8 @@ class MainActivity : ComponentActivity() {
 
                         val showBottomBar =
                             currentRoute == Screen.TASKS ||
-                                    currentRoute == Screen.PROJECTS ||
-                                    currentRoute == Screen.PROJECT_TASKS
+                                currentRoute == Screen.PROJECTS ||
+                                currentRoute == Screen.PROJECT_TASKS
 
                         Column(Modifier.fillMaxSize()) {
                             NavHost(
@@ -458,7 +458,7 @@ class MainActivity : ComponentActivity() {
                                                 stringResource(R.string.navigation_projects),
                                                 selected =
                                                     currentRoute == Screen.PROJECTS ||
-                                                            currentRoute == Screen.PROJECT_TASKS,
+                                                        currentRoute == Screen.PROJECT_TASKS,
                                                 onClick = { navController.navigateToTab(Screen.PROJECTS) },
                                             ),
                                             NavItem(
