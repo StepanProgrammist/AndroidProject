@@ -1,13 +1,9 @@
 package com.example.coflow
 
 import android.annotation.SuppressLint
-import android.content.Context
-import android.content.ContextWrapper
 import android.os.Bundle
 import androidx.activity.ComponentActivity
-import androidx.activity.OnBackPressedCallback
 import androidx.activity.compose.BackHandler
-import androidx.activity.compose.LocalOnBackPressedDispatcherOwner
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
 import androidx.compose.foundation.LocalIndication
@@ -15,13 +11,11 @@ import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.navigationBarsPadding
 import androidx.compose.runtime.CompositionLocalProvider
-import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewmodel.compose.viewModel
@@ -109,32 +103,10 @@ class MainActivity : ComponentActivity() {
                         val navBackStackEntry by navController.currentBackStackEntryAsState()
                         val currentRoute = navBackStackEntry?.destination?.route
 
-                        val context = LocalContext.current
-                        val backDispatcher = LocalOnBackPressedDispatcherOwner.current?.onBackPressedDispatcher
-                        DisposableEffect(backDispatcher, navController, context) {
-                            val callback =
-                                object : OnBackPressedCallback(true) {
-                                    override fun handleOnBackPressed() {
-                                        val route = navController.currentDestination?.route
-                                        if (route == Screen.TASKS || route == Screen.PROJECTS ||
-                                            navController.previousBackStackEntry == null
-                                        ) {
-                                            context.findActivity()?.moveTaskToBack(true)
-                                        } else {
-                                            navController.safePopBackStack()
-                                        }
-                                    }
-                                }
-                            backDispatcher?.addCallback(callback)
-                            onDispose {
-                                callback.remove()
-                            }
-                        }
-
                         val showBottomBar =
                             currentRoute == Screen.TASKS ||
-                                currentRoute == Screen.PROJECTS ||
-                                currentRoute == Screen.PROJECT_TASKS
+                                    currentRoute == Screen.PROJECTS ||
+                                    currentRoute == Screen.PROJECT_TASKS
 
                         Column(Modifier.fillMaxSize()) {
                             NavHost(
@@ -144,9 +116,6 @@ class MainActivity : ComponentActivity() {
                             ) {
                                 // Мои задачи
                                 composable(Screen.TASKS) {
-                                    BackHandler {
-                                        context.findActivity()?.moveTaskToBack(true)
-                                    }
                                     TasksRoute(
                                         viewModel = tasksViewModel,
                                         onNavigateToCreateTask = { navController.navigate(Screen.CREATE_TASK) },
@@ -161,9 +130,6 @@ class MainActivity : ComponentActivity() {
 
                                 // Проекты
                                 composable(Screen.PROJECTS) {
-                                    BackHandler {
-                                        context.findActivity()?.moveTaskToBack(true)
-                                    }
                                     ProjectsRoute(
                                         onNavigateToCreateProject = { navController.navigate(Screen.CREATE_PROJECT) },
                                         onNavigateToTasks = { navController.navigateToTab(Screen.TASKS) },
@@ -470,6 +436,12 @@ class MainActivity : ComponentActivity() {
                                 }
                             }
 
+                            BackHandler(
+                                enabled = currentRoute == Screen.TASKS || currentRoute == Screen.PROJECTS,
+                            ) {
+                                moveTaskToBack(true)
+                            }
+
                             // Нижняя панель навигации
                             if (showBottomBar) {
                                 CoFlowBottomNavigationBar(
@@ -486,7 +458,7 @@ class MainActivity : ComponentActivity() {
                                                 stringResource(R.string.navigation_projects),
                                                 selected =
                                                     currentRoute == Screen.PROJECTS ||
-                                                        currentRoute == Screen.PROJECT_TASKS,
+                                                            currentRoute == Screen.PROJECT_TASKS,
                                                 onClick = { navController.navigateToTab(Screen.PROJECTS) },
                                             ),
                                             NavItem(
@@ -517,17 +489,11 @@ class MainActivity : ComponentActivity() {
     }
 
     private fun NavHostController.safePopBackStack() {
-        if (previousBackStackEntry != null && currentDestination?.route != Screen.PROJECTS) {
+        if (currentDestination?.route != Screen.TASKS &&
+            currentDestination?.route != Screen.PROJECTS &&
+            previousBackStackEntry != null
+        ) {
             popBackStack()
         }
-    }
-
-    private fun Context.findActivity(): ComponentActivity? {
-        var ctx = this
-        while (ctx is ContextWrapper) {
-            if (ctx is ComponentActivity) return ctx
-            ctx = ctx.baseContext
-        }
-        return null
     }
 }
