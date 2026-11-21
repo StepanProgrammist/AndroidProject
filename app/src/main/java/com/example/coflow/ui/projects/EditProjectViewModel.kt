@@ -15,6 +15,7 @@ import com.example.coflow.repositories.FirebaseUserRepositoryImpl
 import com.example.coflow.repositories.MembershipRepository
 import com.example.coflow.repositories.ProjectRepository
 import com.example.coflow.repositories.UserRepository
+import com.example.coflow.repositories.dto.MembershipAddDto
 import com.example.coflow.repositories.dto.MembershipUpdateDto
 import com.example.coflow.repositories.dto.ProjectUpdateDto
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -39,6 +40,8 @@ data class EditProjectUiState(
     val title: String = "",
     val description: String = "",
     val members: List<ProjectMemberUi> = emptyList(),
+    // Участники, добавленные через экран добавления и ещё не сохранённые
+    val newParticipants: List<ProjectParticipant> = emptyList(),
     val isLoading: Boolean = true,
     val isSaving: Boolean = false,
     val isDeleting: Boolean = false,
@@ -47,6 +50,7 @@ data class EditProjectUiState(
     val isProjectDeleted: Boolean = false,
     val errorMessage: String? = null,
     val errorMessageResId: Int? = null,
+    val unresolvedEmails: List<String> = emptyList(),
 ) {
     val descriptionLength: Int get() = description.length
 
@@ -66,7 +70,6 @@ class EditProjectViewModel(
 
     private val projectId: String = savedStateHandle.get<String>("projectId").orEmpty()
 
-    // Кэш пользователей, чтобы не дёргать Firestore повторно
     private val userCache = mutableMapOf<String, UserModel>()
 
     init {
@@ -88,16 +91,14 @@ class EditProjectViewModel(
             try {
                 val currentUid = authRepository.getCurrentUserUid()
 
-                val project =
-                    projectRepository.getById(projectId).getOrElse { error ->
-                        _state.update { it.copyError(error) }
-                        return@launch
-                    }
-                val memberships =
-                    membershipRepository.getByProjectId(projectId).getOrElse { error ->
-                        _state.update { it.copyError(error) }
-                        return@launch
-                    }
+                val project = projectRepository.getById(projectId).getOrElse { error ->
+                    _state.update { it.copyError(error) }
+                    return@launch
+                }
+                val memberships = membershipRepository.getByProjectId(projectId).getOrElse { error ->
+                    _state.update { it.copyError(error) }
+                    return@launch
+                }
                 val membersUi = memberships.map { buildMemberUi(it, currentUid) }
 
                 _state.update {
@@ -122,11 +123,10 @@ class EditProjectViewModel(
         membership: MembershipModel,
         currentUid: String?,
     ): ProjectMemberUi {
-        val user =
-            userCache[membership.userId]
-                ?: userRepository.getById(membership.userId).getOrNull()?.also {
-                    userCache[membership.userId] = it
-                }
+        val user = userCache[membership.userId]
+            ?: userRepository.getById(membership.userId).getOrNull()?.also {
+                userCache[membership.userId] = it
+            }
 
         val name = user?.name?.takeIf { it.isNotBlank() }.orEmpty()
         val email = user?.email.orEmpty()
@@ -150,7 +150,7 @@ class EditProjectViewModel(
             .joinToString("")
             .ifBlank { "?" }
 
-    // Редактирование полей проекта
+    // --- Редактирование полей проекта ---
 
     fun onTitleChange(newTitle: String) {
         _state.update { it.copy(title = newTitle) }
@@ -160,6 +160,8 @@ class EditProjectViewModel(
         if (newDescription.length > MAX_DESCRIPTION_LENGTH) return
         _state.update { it.copy(description = newDescription) }
     }
+
+    // --- Существующие участники: удаление/смена роли (логика сохранена) ---
 
     fun removeMember(membershipId: String) {
         viewModelScope.launch {
@@ -194,10 +196,9 @@ class EditProjectViewModel(
                         onSuccess = { updated ->
                             _state.update { state ->
                                 state.copy(
-                                    members =
-                                        state.members.map { member ->
-                                            if (member.membershipId == updated.id) member.copy(role = updated.role) else member
-                                        },
+                                    members = state.members.map { member ->
+                                        if (member.membershipId == updated.id) member.copy(role = updated.role) else member
+                                    },
                                 )
                             }
                         },
@@ -211,7 +212,31 @@ class EditProjectViewModel(
         }
     }
 
-    // Сохранение и удаление проекта
+    // --- Новые участники: синхронизация с AddProjectParticipantViewModel ---
+
+    fun syncNewParticipants(items: List<ProjectParticipantItem>) {
+        _state.update { current ->
+            // Отфильтровываем тех, кто уже является участником проекта
+            val existingEmails = current.members.map { it.email.lowercase() }.toSet()
+            current.copy(
+                newParticipants = items
+                    .filter { it.email.lowercase() !in existingEmails }
+                    .map { ProjectParticipant(email = it.email, initials = it.initials) },
+            )
+        }
+    }
+
+    fun onRemoveNewParticipant(participant: ProjectParticipant) {
+        _state.update { current ->
+            current.copy(
+                newParticipants = current.newParticipants.filterNot {
+                    it.email.equals(participant.email, ignoreCase = true)
+                },
+            )
+        }
+    }
+
+    // --- Сохранение и удаление проекта ---
 
     fun onSaveClick() {
         val current = _state.value
@@ -225,17 +250,30 @@ class EditProjectViewModel(
 
         viewModelScope.launch {
             try {
-                val updateDto =
-                    ProjectUpdateDto(
-                        title = current.title.trim(),
-                        description = current.description.trim(),
-                    )
+                val updateDto = ProjectUpdateDto(
+                    title = current.title.trim(),
+                    description = current.description.trim(),
+                )
                 projectRepository.updateProject(current.projectId, updateDto).fold(
                     onSuccess = { updated ->
+                        // 1. Добавляем новых участников (как в CreateProjectViewModel)
+                        val unresolved = addNewParticipants(current.projectId, current.newParticipants)
+
+                        // 2. Перезагружаем список участников, чтобы отобразить добавленных
+                        val currentUid = authRepository.getCurrentUserUid()
+                        val refreshedMemberships =
+                            membershipRepository.getByProjectId(current.projectId).getOrNull()
+                        val membersUi =
+                            refreshedMemberships?.map { buildMemberUi(it, currentUid) }
+                                ?: current.members
+
                         _state.update {
                             it.copy(
                                 title = updated.title,
                                 description = updated.description,
+                                members = membersUi,
+                                newParticipants = emptyList(),
+                                unresolvedEmails = unresolved,
                                 isProjectSaved = true,
                             )
                         }
@@ -250,6 +288,37 @@ class EditProjectViewModel(
                 _state.update { it.copy(isSaving = false) }
             }
         }
+    }
+
+    private suspend fun addNewParticipants(
+        projectId: String,
+        participants: List<ProjectParticipant>,
+    ): List<String> {
+        if (participants.isEmpty()) return emptyList()
+        val unresolved = mutableListOf<String>()
+
+        participants.forEach { participant ->
+            try {
+                val user = userRepository.getByEmail(participant.email).getOrNull()
+                if (user == null || user.isDeleted || user.uid.isBlank()) {
+                    unresolved += participant.email
+                    return@forEach
+                }
+                membershipRepository
+                    .addMember(
+                        MembershipAddDto(
+                            projectId = projectId,
+                            userId = user.uid,
+                            role = Role.MEMBER,
+                        ),
+                    ).onFailure { unresolved += participant.email }
+            } catch (e: CancellationException) {
+                throw e
+            } catch (e: Exception) {
+                unresolved += participant.email
+            }
+        }
+        return unresolved
     }
 
     fun consumeProjectSaved() {
@@ -281,9 +350,7 @@ class EditProjectViewModel(
         viewModelScope.launch {
             try {
                 projectRepository.deleteProject(current.projectId).fold(
-                    onSuccess = {
-                        _state.update { it.copy(isProjectDeleted = true) }
-                    },
+                    onSuccess = { _state.update { it.copy(isProjectDeleted = true) } },
                     onFailure = { error -> _state.update { it.copyError(error) } },
                 )
             } catch (e: CancellationException) {
