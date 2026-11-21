@@ -60,7 +60,7 @@
 
     <string name="add_assignee_button">Добавить исполнителей</string>
 
-    <string name="edit_task_save_button">Сохранить изменения</string>
+    <string name="edit_task_save_button">Сохранить</string>
     <string name="edit_task_delete_button">Удалить задачу</string>
 
     <!-- Ошибки -->
