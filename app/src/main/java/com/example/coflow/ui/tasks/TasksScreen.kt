@@ -202,15 +202,7 @@ fun TasksScreen(
 
             AnimatedVisibility(visible = state.isBottomBarVisible) {
                 Column(
-                    modifier =
-                        Modifier
-                            .fillMaxWidth()
-                            .padding(
-                                bottom =
-                                    WindowInsets.navigationBars
-                                        .asPaddingValues()
-                                        .calculateBottomPadding() + 2.dp,
-                            ),
+                    modifier = Modifier.fillMaxWidth().padding(bottom = 8.dp), // ← маленький фиксированный
                     horizontalAlignment = Alignment.CenterHorizontally,
                 ) {
                     Row(
@@ -230,38 +222,14 @@ fun TasksScreen(
                             selectedFilters = state.selectedFilters,
                             availableFilters = state.availableFilters,
                         )
-                        Spacer(Modifier.width(16.dp))
+//                        Spacer(Modifier.width(16.dp))
 
                         CoFlowFabButton(
                             onClick = onNavigateToCreateTask,
                             iconName = "task_plus",
                         )
                     }
-                    Spacer(Modifier.height(7.dp))
-
-//                    CoFlowBottomNavigationBar(
-//                        items =
-//                            listOf(
-//                                NavItem(
-//                                    icon = "tasks",
-//                                    title = stringResource(R.string.navigation_tasks),
-//                                    selected = true,
-//                                    onClick = onNavigateToProfile,
-//                                ),
-//                                NavItem(
-//                                    icon = "folder",
-//                                    title = stringResource(R.string.navigation_projects),
-//                                    selected = false,
-//                                    onClick = onNavigateToProjects,
-//                                ),
-//                                NavItem(
-//                                    icon = "person",
-//                                    title = stringResource(R.string.navigation_profile),
-//                                    selected = false,
-//                                    onClick = {},
-//                                ),
-//                            ),
-//                    )
+//                    Spacer(Modifier.height(7.dp))
                 }
             }
         }
@@ -344,7 +312,7 @@ fun TasksScreen(
             modifier =
                 Modifier
                     .align(Alignment.TopCenter)
-                    .padding(top = 6.dp),
+                    .padding(top = 65.dp),
             snackbar = { data ->
                 Row(
                     modifier =
@@ -460,7 +428,7 @@ private fun TaskRow(
 ) {
     var offsetX by remember(task.id) { mutableFloatStateOf(0f) }
 
-    val swipeEnabled = task.isMine && !task.isDone
+    val swipeEnabled = task.canModify && !task.isDone
     val actionColor =
         when (task.status) {
             TaskStatus.TODO -> CoFlowColors.Blue
@@ -932,111 +900,111 @@ fun TasksRoute(
     )
 }
 
-@Preview(name = "По статусу (Обычное)", showBackground = true, widthDp = 390, heightDp = 844)
-@Composable
-fun TasksScreen_Default_Preview() {
-    CoFlowTheme {
-        TasksScreen(
-            state =
-                TasksUiState(
-                    activeCount = 5,
-                    completedCount = 12,
-                    groups =
-                        listOf(
-                            TaskGroupUi(
-                                id = "TODO",
-                                titleResId = R.string.tasks_group_planned,
-                                count = 2,
-                                isExpanded = true,
-                                tasks =
-                                    listOf(
-                                        TaskRowUi(
-                                            "1",
-                                            "Обновить иконки навигации",
-                                            "project_1",
-                                            "Дизайн-система",
-                                            "user_1",
-                                            "user_1",
-                                            "30.10.26",
-                                            TaskStatus.TODO,
-                                            isDone = false,
-                                            isOverdue = false,
-                                        ),
-                                        TaskRowUi(
-                                            "2",
-                                            "Согласовать ТЗ с заказчиком",
-                                            "project_1",
-                                            "Сайт",
-                                            "user_2",
-                                            "user_1",
-                                            "01.11.26",
-                                            TaskStatus.TODO,
-                                            isDone = false,
-                                            isOverdue = false,
-                                        ),
-                                    ),
-                            ),
-                            TaskGroupUi(
-                                id = "IN_PROGRESS",
-                                titleResId = R.string.tasks_group_active,
-                                count = 3,
-                                isExpanded = false,
-                                tasks =
-                                    listOf(
-                                        TaskRowUi(
-                                            "3",
-                                            "Разработать онбординг",
-                                            "project_1",
-                                            "Мобильное приложение",
-                                            "user_1",
-                                            "user_3",
-                                            "24.10.26",
-                                            TaskStatus.IN_PROGRESS,
-                                            isDone = false,
-                                            isOverdue = true,
-                                        ), // Просрочено!
-                                        TaskRowUi(
-                                            "4",
-                                            "Настроить CI/CD",
-                                            "project_1",
-                                            "Бэкенд",
-                                            "user_3",
-                                            "user_2",
-                                            "28.10.26",
-                                            TaskStatus.IN_PROGRESS,
-                                            isDone = false,
-                                            isOverdue = false,
-                                        ),
-                                    ),
-                            ),
-                            TaskGroupUi(
-                                id = "DONE",
-                                titleResId = R.string.tasks_group_completed,
-                                count = 12,
-                                isExpanded = false,
-                                tasks = emptyList(),
-                            ),
-                        ),
-                    currentGrouping = TaskGrouping.STATUS,
-                    availableFilters =
-                        listOf(
-                            TaskFilterItem("NONE", "", FilterType.NONE),
-                            TaskFilterItem("MINE", "", FilterType.MINE),
-                            TaskFilterItem("project_1", "Дизайн-система", FilterType.PROJECT),
-                            TaskFilterItem("project_2", "Мобильное приложение", FilterType.PROJECT),
-                        ),
-                    isBottomBarVisible = true,
-                    selectedFilters = setOf("MINE"),
-                ),
-            onNavigateToCreateTask = {},
-            onNavigateToTaskDetail = {},
-            onGroupingChange = {},
-            onFilterToggle = {},
-            onToggleGroup = {},
-            onNavigateToProjects = {},
-            onNavigateToProfile = {},
-            onClearError = {},
-            onTaskSwipe = {},
-        )
-    }
-}
+// @Preview(name = "По статусу (Обычное)", showBackground = true, widthDp = 390, heightDp = 844)
+// @Composable
+// fun TasksScreen_Default_Preview() {
+//    CoFlowTheme {
+//        TasksScreen(
+//            state =
+//                TasksUiState(
+//                    activeCount = 5,
+//                    completedCount = 12,
+//                    groups =
+//                        listOf(
+//                            TaskGroupUi(
+//                                id = "TODO",
+//                                titleResId = R.string.tasks_group_planned,
+//                                count = 2,
+//                                isExpanded = true,
+//                                tasks =
+//                                    listOf(
+//                                        TaskRowUi(
+//                                            "1",
+//                                            "Обновить иконки навигации",
+//                                            "project_1",
+//                                            "Дизайн-система",
+//                                            "user_1",
+//                                            "user_1",
+//                                            "30.10.26",
+//                                            TaskStatus.TODO,
+//                                            isDone = false,
+//                                            isOverdue = false,
+//                                        ),
+//                                        TaskRowUi(
+//                                            "2",
+//                                            "Согласовать ТЗ с заказчиком",
+//                                            "project_1",
+//                                            "Сайт",
+//                                            "user_2",
+//                                            "user_1",
+//                                            "01.11.26",
+//                                            TaskStatus.TODO,
+//                                            isDone = false,
+//                                            isOverdue = false,
+//                                        ),
+//                                    ),
+//                            ),
+//                            TaskGroupUi(
+//                                id = "IN_PROGRESS",
+//                                titleResId = R.string.tasks_group_active,
+//                                count = 3,
+//                                isExpanded = false,
+//                                tasks =
+//                                    listOf(
+//                                        TaskRowUi(
+//                                            "3",
+//                                            "Разработать онбординг",
+//                                            "project_1",
+//                                            "Мобильное приложение",
+//                                            "user_1",
+//                                            "user_3",
+//                                            "24.10.26",
+//                                            TaskStatus.IN_PROGRESS,
+//                                            isDone = false,
+//                                            isOverdue = true,
+//                                        ), // Просрочено!
+//                                        TaskRowUi(
+//                                            "4",
+//                                            "Настроить CI/CD",
+//                                            "project_1",
+//                                            "Бэкенд",
+//                                            "user_3",
+//                                            "user_2",
+//                                            "28.10.26",
+//                                            TaskStatus.IN_PROGRESS,
+//                                            isDone = false,
+//                                            isOverdue = false,
+//                                        ),
+//                                    ),
+//                            ),
+//                            TaskGroupUi(
+//                                id = "DONE",
+//                                titleResId = R.string.tasks_group_completed,
+//                                count = 12,
+//                                isExpanded = false,
+//                                tasks = emptyList(),
+//                            ),
+//                        ),
+//                    currentGrouping = TaskGrouping.STATUS,
+//                    availableFilters =
+//                        listOf(
+//                            TaskFilterItem("NONE", "", FilterType.NONE),
+//                            TaskFilterItem("MINE", "", FilterType.MINE),
+//                            TaskFilterItem("project_1", "Дизайн-система", FilterType.PROJECT),
+//                            TaskFilterItem("project_2", "Мобильное приложение", FilterType.PROJECT),
+//                        ),
+//                    isBottomBarVisible = true,
+//                    selectedFilters = setOf("MINE"),
+//                ),
+//            onNavigateToCreateTask = {},
+//            onNavigateToTaskDetail = {},
+//            onGroupingChange = {},
+//            onFilterToggle = {},
+//            onToggleGroup = {},
+//            onNavigateToProjects = {},
+//            onNavigateToProfile = {},
+//            onClearError = {},
+//            onTaskSwipe = {},
+//        )
+//    }
+// }
