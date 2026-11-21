@@ -238,8 +238,7 @@ private fun ParticipantsCard(
             fontWeight = FontWeight.SemiBold,
             color = CoFlowColors.TextPrimary,
         )
-
-        // Добавление участника — заглушка, позже откроется отдельное окно.
+        
         Row(
             modifier =
                 Modifier

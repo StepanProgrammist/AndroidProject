@@ -39,7 +39,8 @@ data class EditProjectUiState(
     val projectId: String = "",
     val title: String = "",
     val description: String = "",
-    val members: List<ProjectMemberUi> = emptyList(),
+    val participants: List<ProjectParticipant> = emptyList(),
+    val participantPendingRemoval: ProjectParticipant? = null,
     val isLoading: Boolean = true,
     val isSaving: Boolean = false,
     val isDeleting: Boolean = false,
@@ -106,7 +107,9 @@ class EditProjectViewModel(
                         projectId = project.id,
                         title = project.title,
                         description = project.description,
-                        members = membersUi,
+                        participants = membersUi.map { member ->
+                            ProjectParticipant(email = member.email, initials = member.initials)
+                        },
                     )
                 }
             } catch (e: CancellationException) {
@@ -162,53 +165,31 @@ class EditProjectViewModel(
         _state.update { it.copy(description = newDescription) }
     }
 
-    fun removeMember(membershipId: String) {
-        viewModelScope.launch {
-            try {
-                membershipRepository.deleteMember(membershipId).fold(
-                    onSuccess = {
-                        _state.update { state ->
-                            state.copy(members = state.members.filterNot { it.membershipId == membershipId })
-                        }
-                    },
-                    onFailure = { error -> _state.update { it.copyError(error) } },
-                )
-            } catch (e: CancellationException) {
-                throw e
-            } catch (e: Exception) {
-                _state.update { it.copyError(e) }
-            }
+    fun syncParticipants(items: List<ProjectParticipantItem>) {
+        _state.update { current ->
+            val newParticipants = items.map { ProjectParticipant(email = it.email, initials = it.initials) }
+            // Объединяем существующих и только что добавленных (без дубликатов)
+            val merged = (current.participants + newParticipants).distinctBy { it.email.lowercase() }
+            current.copy(participants = merged)
         }
     }
 
-    fun changeMemberRole(
-        membershipId: String,
-        newRole: Role,
-    ) {
-        viewModelScope.launch {
-            try {
-                membershipRepository
-                    .updateMember(
-                        id = membershipId,
-                        update = MembershipUpdateDto(role = newRole),
-                    ).fold(
-                        onSuccess = { updated ->
-                            _state.update { state ->
-                                state.copy(
-                                    members =
-                                        state.members.map { member ->
-                                            if (member.membershipId == updated.id) member.copy(role = updated.role) else member
-                                        },
-                                )
-                            }
-                        },
-                        onFailure = { error -> _state.update { it.copyError(error) } },
-                    )
-            } catch (e: CancellationException) {
-                throw e
-            } catch (e: Exception) {
-                _state.update { it.copyError(e) }
-            }
+    // --- Отмена приглашения ---
+    fun onRemoveParticipantClick(participant: ProjectParticipant) {
+        _state.update { it.copy(participantPendingRemoval = participant) }
+    }
+
+    fun onDismissRemoveParticipantDialog() {
+        _state.update { it.copy(participantPendingRemoval = null) }
+    }
+
+    fun onConfirmRemoveParticipant() {
+        val pending = _state.value.participantPendingRemoval ?: return
+        _state.update {
+            it.copy(
+                participants = it.participants.filterNot { p -> p.email.equals(pending.email, ignoreCase = true) },
+                participantPendingRemoval = null,
+            )
         }
     }
 

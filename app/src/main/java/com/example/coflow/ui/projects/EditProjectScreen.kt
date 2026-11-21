@@ -23,11 +23,11 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.ArrowDropDown
-import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material.icons.filled.MoreVert
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.DropdownMenu
 import androidx.compose.material3.DropdownMenuItem
+import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.Text
@@ -41,10 +41,12 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalFocusManager
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
@@ -59,8 +61,10 @@ import com.example.coflow.ui.components.CoFlowEditDeleteButton
 import com.example.coflow.ui.components.CoFlowEditSaveButton
 import com.example.coflow.ui.components.CoFlowGlassCard
 import com.example.coflow.ui.components.CoFlowGlassTextField
+import com.example.coflow.ui.components.CoFlowIcon
 import com.example.coflow.ui.components.CoFlowScreenHeader
 import com.example.coflow.ui.theme.CoFlowColors
+import com.example.coflow.ui.theme.CoFlowGlassStyles
 import com.example.coflow.ui.theme.CoFlowSpacing
 import com.example.coflow.ui.theme.CoFlowTheme
 import com.example.coflow.ui.theme.coFlowTasksBackgroundBrush
@@ -73,8 +77,10 @@ fun EditProjectScreen(
     onDeleteClick: () -> Unit,
     onTitleChange: (String) -> Unit,
     onDescriptionChange: (String) -> Unit,
-    onMemberRoleChange: (String, Role) -> Unit,
-    onMemberRemoveClick: (String) -> Unit,
+    onAddParticipantClick: () -> Unit,
+    onRemoveParticipantClick: (ProjectParticipant) -> Unit,
+    onConfirmRemoveParticipant: () -> Unit,
+    onDismissRemoveParticipantDialog: () -> Unit,
 ) {
     val focusManager = LocalFocusManager.current
 
@@ -131,47 +137,31 @@ fun EditProjectScreen(
                 Spacer(modifier = Modifier.height(8.dp))
 
                 // Секция участников
+                // Участники
                 Text(
-                    text = stringResource(R.string.assignees_header), // Переиспользуем "Исполнители" / "Участники"
-                    fontSize = 16.sp,
-                    fontWeight = FontWeight.Bold,
+                    text = stringResource(R.string.create_project_participants_label),
+                    modifier = Modifier.padding(start = 12.dp, bottom = 4.dp),
+                    fontSize = 11.sp,
+                    fontWeight = FontWeight.SemiBold,
                     color = CoFlowColors.TextPrimary,
-                    modifier = Modifier.padding(vertical = 4.dp),
                 )
 
-                CoFlowGlassCard(modifier = Modifier.fillMaxWidth()) {
-                    Column(modifier = Modifier.padding(8.dp)) {
-                        if (state.members.isEmpty()) {
-                            Text(
-                                text = stringResource(R.string.assignees_placeholder),
-                                color = CoFlowColors.TextSecondary,
-                                modifier =
-                                    Modifier
-                                        .padding(16.dp)
-                                        .align(Alignment.CenterHorizontally),
-                            )
-                        } else {
-                            state.members.forEachIndexed { index, member ->
-                                MemberRow(
-                                    member = member,
-                                    onRoleChange = { newRole -> onMemberRoleChange(member.membershipId, newRole) },
-                                    onRemoveClick = { onMemberRemoveClick(member.membershipId) },
-                                )
-                                if (index < state.members.lastIndex) {
-                                    Spacer(modifier = Modifier.height(8.dp))
-                                    // Разделитель
-                                    Spacer(
-                                        modifier =
-                                            Modifier
-                                                .fillMaxWidth()
-                                                .height(1.dp)
-                                                .background(CoFlowColors.TextSecondary.copy(alpha = 0.1f)),
-                                    )
-                                    Spacer(modifier = Modifier.height(8.dp))
-                                }
-                            }
-                        }
-                    }
+                ParticipantsCard(
+                    participants = state.participants,
+                    onAddParticipantClick = {
+                        focusManager.clearFocus()
+                        onAddParticipantClick()
+                    },
+                    onRemoveParticipantClick = onRemoveParticipantClick,
+                )
+
+                if (state.errorMessage != null) {
+                    Text(
+                        text = state.errorMessage,
+                        modifier = Modifier.padding(horizontal = 4.dp),
+                        fontSize = 12.sp,
+                        color = CoFlowColors.Error,
+                    )
                 }
 
                 Spacer(modifier = Modifier.size(4.dp))
@@ -209,150 +199,128 @@ fun EditProjectScreen(
 }
 
 @Composable
-private fun MemberRow(
-    member: ProjectMemberUi,
-    onRoleChange: (Role) -> Unit,
+private fun ParticipantsCard(
+    participants: List<ProjectParticipant>,
+    onAddParticipantClick: () -> Unit,
+    onRemoveParticipantClick: (ProjectParticipant) -> Unit,
+) {
+    CoFlowGlassCard(modifier = Modifier.fillMaxWidth()) {
+        Text(
+            text = stringResource(R.string.create_project_participants_title),
+            modifier = Modifier.padding(horizontal = 4.dp, vertical = 4.dp),
+            fontSize = 13.sp,
+            fontWeight = FontWeight.SemiBold,
+            color = CoFlowColors.TextPrimary,
+        )
+
+        Row(
+            modifier =
+                Modifier
+                    .fillMaxWidth()
+                    .clip(RoundedCornerShape(12.dp))
+                    .clickable(onClick = onAddParticipantClick)
+                    .padding(horizontal = 4.dp, vertical = 10.dp),
+            verticalAlignment = Alignment.CenterVertically,
+        ) {
+            CoFlowIcon(
+                name = "person_plus",
+                modifier = Modifier.size(22.dp),
+                color = CoFlowColors.Blue,
+            )
+            Spacer(Modifier.width(10.dp))
+            Text(
+                text = stringResource(R.string.create_project_add_participant),
+                fontSize = 14.sp,
+                color = CoFlowColors.Blue,
+            )
+        }
+
+        participants.forEach { participant ->
+            HorizontalDivider(
+                color = CoFlowGlassStyles.BlueBorder,
+                thickness = 1.dp,
+            )
+            ParticipantRow(
+                participant = participant,
+                onRemoveClick = { onRemoveParticipantClick(participant) },
+            )
+        }
+    }
+}
+
+@Composable
+private fun ParticipantRow(
+    participant: ProjectParticipant,
     onRemoveClick: () -> Unit,
 ) {
-    val isOwner = member.role == Role.OWNER
-    var menuExpanded by remember { mutableStateOf(false) }
-    var roleMenuExpanded by remember { mutableStateOf(false) }
-
     Row(
         modifier =
             Modifier
                 .fillMaxWidth()
-                .padding(vertical = 8.dp, horizontal = 4.dp),
+                .padding(horizontal = 4.dp, vertical = 9.dp),
         verticalAlignment = Alignment.CenterVertically,
     ) {
-        // Аватар (инициалы)
+        // Аватарка: инициалы для зарегистрированного пользователя,
+        // дефолтный человечек для остальных.
         Box(
             modifier =
                 Modifier
-                    .size(40.dp)
+                    .size(36.dp)
                     .clip(CircleShape)
-                    .background(CoFlowColors.Blue.copy(alpha = 0.15f)),
+                    .background(PARTICIPANT_AVATAR_COLOR),
             contentAlignment = Alignment.Center,
         ) {
-            Text(
-                text = member.initials,
-                color = CoFlowColors.Blue,
-                fontWeight = FontWeight.Bold,
-                fontSize = 14.sp,
-            )
+            if (participant.initials != null) {
+                Text(
+                    text = participant.initials,
+                    fontSize = 12.sp,
+                    fontWeight = FontWeight.Bold,
+                    color = CoFlowColors.Blue,
+                )
+            } else {
+                // Иконка «person» уже есть в CoFlowIcons.
+                CoFlowIcon(
+                    name = "person",
+                    modifier = Modifier.size(20.dp),
+                    color = CoFlowColors.Blue.copy(alpha = 0.75f),
+                )
+            }
         }
+
         Spacer(Modifier.width(12.dp))
 
-        // Имя и email
-        Column(modifier = Modifier.weight(1f)) {
-            Text(
-                text = member.name,
-                fontWeight = FontWeight.Medium,
-                color = CoFlowColors.TextPrimary,
-                fontSize = 14.sp,
-            )
-            Text(
-                text = member.email,
-                fontSize = 12.sp,
-                color = CoFlowColors.TextSecondary,
-            )
-        }
-
-        // Роль (теперь только информационная подпись)
         Text(
-            text = getRoleText(member.role),
-            color = if (isOwner) CoFlowColors.TextSecondary else CoFlowColors.Blue,
-            fontSize = 12.sp,
-            fontWeight = FontWeight.Medium,
+            text = participant.email,
+            modifier = Modifier.weight(1f),
+            fontSize = 13.sp,
+            color = CoFlowColors.TextPrimary,
+            maxLines = 1,
+            overflow = TextOverflow.Ellipsis,
         )
-        Spacer(Modifier.width(4.dp))
 
-        if (!isOwner) {
-            Box {
-                IconButton(
-                    onClick = { menuExpanded = true },
-                    modifier = Modifier.size(32.dp),
-                ) {
-                    Icon(
-                        imageVector = Icons.Default.MoreVert,
-                        contentDescription = "Действия с участником",
-                        tint = CoFlowColors.TextSecondary,
-                        modifier = Modifier.size(20.dp),
-                    )
-                }
+        Spacer(Modifier.width(8.dp))
 
-                // Основное мини-меню: Сменить роль / Удалить
-                DropdownMenu(
-                    expanded = menuExpanded,
-                    onDismissRequest = { menuExpanded = false },
-                ) {
-                    DropdownMenuItem(
-                        text = {
-                            Text(
-                                text = stringResource(R.string.change_role),
-                                color = CoFlowColors.TextPrimary,
-                                fontSize = 14.sp,
-                            )
-                        },
-                        onClick = {
-                            menuExpanded = false
-                            roleMenuExpanded = true
-                        },
-                    )
-                    DropdownMenuItem(
-                        text = {
-                            Text(
-                                text = stringResource(R.string.delete_member),
-                                color = CoFlowColors.Error,
-                                fontSize = 14.sp,
-                            )
-                        },
-                        onClick = {
-                            menuExpanded = false
-                            onRemoveClick()
-                        },
-                    )
-                }
-
-                // Каскадное меню выбора новой роли
-                DropdownMenu(
-                    expanded = roleMenuExpanded,
-                    onDismissRequest = { roleMenuExpanded = false },
-                ) {
-                    Role
-                        .values()
-                        .filter { it != Role.OWNER }
-                        .forEach { role ->
-                            DropdownMenuItem(
-                                text = {
-                                    Text(
-                                        text = getRoleText(role),
-                                        color =
-                                            if (role == member.role) {
-                                                CoFlowColors.Blue
-                                            } else {
-                                                CoFlowColors.TextPrimary
-                                            },
-                                        fontWeight =
-                                            if (role == member.role) {
-                                                FontWeight.SemiBold
-                                            } else {
-                                                FontWeight.Normal
-                                            },
-                                        fontSize = 14.sp,
-                                    )
-                                },
-                                onClick = {
-                                    roleMenuExpanded = false
-                                    onRoleChange(role)
-                                },
-                            )
-                        }
-                }
-            }
+        // Отмена приглашения — отдельное нажатие на красный минус, затем подтверждение.
+        Box(
+            modifier =
+                Modifier
+                    .size(24.dp)
+                    .clip(CircleShape)
+                    .background(CoFlowColors.Error)
+                    .clickable(onClick = onRemoveClick),
+            contentAlignment = Alignment.Center,
+        ) {
+            CoFlowIcon(
+                name = "minus",
+                modifier = Modifier.size(14.dp),
+                color = Color.White,
+                contentDescription = stringResource(R.string.create_project_remove_participant),
+            )
         }
     }
 }
+
+private val PARTICIPANT_AVATAR_COLOR = Color(0xFFC9DCFB)
 
 @Composable
 private fun getRoleText(role: Role): String =
@@ -368,6 +336,8 @@ fun EditProjectRoute(
     onNavigateBack: () -> Unit,
     onProjectSaved: () -> Unit,
     onProjectDeleted: () -> Unit,
+    onAddParticipantClick: () -> Unit,
+    addParticipantViewModel: AddProjectParticipantViewModel,
     viewModel: EditProjectViewModel =
         viewModel(
             factory =
@@ -379,7 +349,12 @@ fun EditProjectRoute(
         ),
 ) {
     val state by viewModel.state.collectAsStateWithLifecycle()
+    val participantState by addParticipantViewModel.state.collectAsStateWithLifecycle()
     val context = LocalContext.current
+
+    LaunchedEffect(participantState.participants) {
+        viewModel.syncParticipants(participantState.participants)
+    }
 
     // Обработка успешного сохранения
     LaunchedEffect(state.isProjectSaved) {
@@ -406,8 +381,19 @@ fun EditProjectRoute(
         onDeleteClick = viewModel::showDeleteDialog,
         onTitleChange = viewModel::onTitleChange,
         onDescriptionChange = viewModel::onDescriptionChange,
-        onMemberRoleChange = viewModel::changeMemberRole,
-        onMemberRemoveClick = viewModel::removeMember,
+        onAddParticipantClick = onAddParticipantClick,
+        onRemoveParticipantClick = viewModel::onRemoveParticipantClick,
+        onConfirmRemoveParticipant = {
+            // FIX: подтверждённое удаление реально убирает участника
+            // из общего ViewModel, а syncParticipants отобразит это в UI.
+            state.participantPendingRemoval?.let { pending ->
+                participantState.participants
+                    .firstOrNull { it.email.equals(pending.email, ignoreCase = true) }
+                    ?.let(addParticipantViewModel::onRemoveParticipant)
+            }
+            viewModel.onConfirmRemoveParticipant()
+        },
+        onDismissRemoveParticipantDialog = viewModel::onDismissRemoveParticipantDialog,
     )
 
     // Диалог подтверждения удаления
@@ -440,10 +426,11 @@ fun EditProjectScreen_Preview() {
                     projectId = "1",
                     title = "Мобильное приложение CoFlow",
                     description = "Разработка кроссплатформенного мобильного приложения для управления задачами и проектами.",
-                    members =
+                    participants =
                         listOf(
-                            ProjectMemberUi("m1", "u1", "Алексей Смирнов", "alexey@coflow.com", "АС", Role.OWNER, isCurrentUser = true),
-                            ProjectMemberUi("m2", "u2", "Мария Иванова", "maria@coflow.com", "МИ", Role.MEMBER, isCurrentUser = false),
+                            ProjectParticipant("m.orlov@example.com", initials = "МО"),
+                            ProjectParticipant("elena.v@example.com", initials = "ЕВ"),
+                            ProjectParticipant("unknown@example.com"),
                         ),
                     isLoading = false,
                     isSaving = false,
@@ -453,8 +440,10 @@ fun EditProjectScreen_Preview() {
             onDeleteClick = {},
             onTitleChange = {},
             onDescriptionChange = {},
-            onMemberRoleChange = { _, _ -> },
-            onMemberRemoveClick = {},
+            onAddParticipantClick = {},
+            onRemoveParticipantClick = {},
+            onConfirmRemoveParticipant = {},
+            onDismissRemoveParticipantDialog = {},
         )
     }
 }
