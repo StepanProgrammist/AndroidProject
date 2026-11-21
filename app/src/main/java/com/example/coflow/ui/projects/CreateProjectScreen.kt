@@ -238,7 +238,7 @@ private fun ParticipantsCard(
             fontWeight = FontWeight.SemiBold,
             color = CoFlowColors.TextPrimary,
         )
-        
+
         Row(
             modifier =
                 Modifier

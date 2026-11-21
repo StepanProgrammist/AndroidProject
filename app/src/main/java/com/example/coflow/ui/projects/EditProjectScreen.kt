@@ -86,16 +86,18 @@ fun EditProjectScreen(
     BackHandler(onBack = onBackClick)
 
     Box(
-        modifier = Modifier
-            .fillMaxSize()
-            .background(coFlowTasksBackgroundBrush()),
+        modifier =
+            Modifier
+                .fillMaxSize()
+                .background(coFlowTasksBackgroundBrush()),
     ) {
         Column(
-            modifier = Modifier
-                .fillMaxSize()
-                .navigationBarsPadding()
-                .imePadding()
-                .padding(horizontal = CoFlowSpacing.ScreenHorizontal),
+            modifier =
+                Modifier
+                    .fillMaxSize()
+                    .navigationBarsPadding()
+                    .imePadding()
+                    .padding(horizontal = CoFlowSpacing.ScreenHorizontal),
         ) {
             CoFlowScreenHeader(
                 title = stringResource(R.string.edit_project_header),
@@ -106,10 +108,11 @@ fun EditProjectScreen(
             )
 
             Column(
-                modifier = Modifier
-                    .weight(1f)
-                    .fillMaxWidth()
-                    .verticalScroll(rememberScrollState()),
+                modifier =
+                    Modifier
+                        .weight(1f)
+                        .fillMaxWidth()
+                        .verticalScroll(rememberScrollState()),
                 verticalArrangement = Arrangement.spacedBy(12.dp),
             ) {
                 CoFlowGlassTextField(
@@ -148,9 +151,10 @@ fun EditProjectScreen(
                             Text(
                                 text = stringResource(R.string.assignees_placeholder),
                                 color = CoFlowColors.TextSecondary,
-                                modifier = Modifier
-                                    .padding(16.dp)
-                                    .align(Alignment.CenterHorizontally),
+                                modifier =
+                                    Modifier
+                                        .padding(16.dp)
+                                        .align(Alignment.CenterHorizontally),
                             )
                         } else {
                             // Существующие участники — со сменой роли и удалением
@@ -196,9 +200,10 @@ fun EditProjectScreen(
             }
 
             Row(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(top = 8.dp, bottom = 16.dp),
+                modifier =
+                    Modifier
+                        .fillMaxWidth()
+                        .padding(top = 8.dp, bottom = 16.dp),
                 horizontalArrangement = Arrangement.spacedBy(12.dp),
             ) {
                 CoFlowEditDeleteButton(
@@ -234,16 +239,18 @@ private fun MemberRow(
     var menuExpanded by remember { mutableStateOf(false) }
 
     Row(
-        modifier = Modifier
-            .fillMaxWidth()
-            .padding(vertical = 8.dp, horizontal = 4.dp),
+        modifier =
+            Modifier
+                .fillMaxWidth()
+                .padding(vertical = 8.dp, horizontal = 4.dp),
         verticalAlignment = Alignment.CenterVertically,
     ) {
         Box(
-            modifier = Modifier
-                .size(40.dp)
-                .clip(CircleShape)
-                .background(CoFlowColors.Blue.copy(alpha = 0.15f)),
+            modifier =
+                Modifier
+                    .size(40.dp)
+                    .clip(CircleShape)
+                    .background(CoFlowColors.Blue.copy(alpha = 0.15f)),
             contentAlignment = Alignment.Center,
         ) {
             Text(
@@ -334,16 +341,18 @@ private fun NewParticipantRow(
     onRemoveClick: () -> Unit,
 ) {
     Row(
-        modifier = Modifier
-            .fillMaxWidth()
-            .padding(vertical = 8.dp, horizontal = 4.dp),
+        modifier =
+            Modifier
+                .fillMaxWidth()
+                .padding(vertical = 8.dp, horizontal = 4.dp),
         verticalAlignment = Alignment.CenterVertically,
     ) {
         Box(
-            modifier = Modifier
-                .size(40.dp)
-                .clip(CircleShape)
-                .background(CoFlowColors.Blue.copy(alpha = 0.15f)),
+            modifier =
+                Modifier
+                    .size(40.dp)
+                    .clip(CircleShape)
+                    .background(CoFlowColors.Blue.copy(alpha = 0.15f)),
             contentAlignment = Alignment.Center,
         ) {
             if (participant.initials != null) {
@@ -375,11 +384,12 @@ private fun NewParticipantRow(
         Spacer(Modifier.width(8.dp))
 
         Box(
-            modifier = Modifier
-                .size(24.dp)
-                .clip(CircleShape)
-                .background(CoFlowColors.Error)
-                .clickable(onClick = onRemoveClick),
+            modifier =
+                Modifier
+                    .size(24.dp)
+                    .clip(CircleShape)
+                    .background(CoFlowColors.Error)
+                    .clickable(onClick = onRemoveClick),
             contentAlignment = Alignment.Center,
         ) {
             CoFlowIcon(
@@ -396,11 +406,12 @@ private fun NewParticipantRow(
 @Composable
 private fun AddParticipantRow(onClick: () -> Unit) {
     Row(
-        modifier = Modifier
-            .fillMaxWidth()
-            .clip(RoundedCornerShape(12.dp))
-            .clickable(onClick = onClick)
-            .padding(horizontal = 4.dp, vertical = 10.dp),
+        modifier =
+            Modifier
+                .fillMaxWidth()
+                .clip(RoundedCornerShape(12.dp))
+                .clickable(onClick = onClick)
+                .padding(horizontal = 4.dp, vertical = 10.dp),
         verticalAlignment = Alignment.CenterVertically,
     ) {
         CoFlowIcon(
