@@ -2,6 +2,7 @@ package com.example.coflow
 
 import android.annotation.SuppressLint
 import android.os.Bundle
+import android.widget.Toast
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.BackHandler
 import androidx.activity.compose.setContent
@@ -11,12 +12,18 @@ import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.navigationBarsPadding
 import androidx.compose.runtime.CompositionLocalProvider
+import androidx.compose.runtime.DisposableEffect
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
+import androidx.lifecycle.Lifecycle
+import androidx.lifecycle.LifecycleEventObserver
+import androidx.lifecycle.compose.LocalLifecycleOwner
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.NavGraph.Companion.findStartDestination
@@ -31,6 +38,10 @@ import com.example.coflow.repositories.FirebaseAuthRepositoryImpl
 import com.example.coflow.ui.auth.AuthRoute
 import com.example.coflow.ui.components.CoFlowBottomNavigationBar
 import com.example.coflow.ui.components.NavItem
+import com.example.coflow.ui.profile.EditProfileRoute
+import com.example.coflow.ui.profile.NotificationsRoute
+import com.example.coflow.ui.profile.NotificationsViewModel
+import com.example.coflow.ui.profile.ProfileRoute
 import com.example.coflow.ui.projects.AddParticipantRoute
 import com.example.coflow.ui.projects.AddProjectParticipantViewModel
 import com.example.coflow.ui.projects.CreateProjectRoute
@@ -62,6 +73,10 @@ object Screen {
     const val PROJECT_DETAIL = "project_detail/{projectId}"
     const val CREATE_PROJECT = "create_project"
     const val EDIT_TASK = "edit_task/{taskId}"
+
+    const val PROFILE = "profile"
+    const val EDIT_PROFILE = "edit_profile"
+    const val NOTIFICATIONS = "notifications"
 
     const val EDIT_PROJECT = "edit_project/{projectId}"
     const val PROJECT_TASKS = "project_tasks/{projectId}"
@@ -100,13 +115,56 @@ class MainActivity : ComponentActivity() {
                         val createTaskViewModel: CreateTaskViewModel = viewModel()
                         val tasksViewModel: TasksScreenViewModel = viewModel()
 
+                        // Один экземпляр на всё приложение: экран уведомлений и все
+                        // колокольчики показывают одно и то же состояние.
+                        val notificationsViewModel: NotificationsViewModel = viewModel()
+                        val notificationsState by notificationsViewModel.state.collectAsStateWithLifecycle()
+
+                        // ViewModel-и живут в Activity и переживают выход из аккаунта,
+                        // поэтому после каждого входа подписываемся заново: иначе
+                        // останутся данные предыдущего пользователя.
+                        LaunchedEffect(Unit) {
+                            tasksViewModel.refresh()
+                        }
+
+                        // Счётчик непрочитанных обновляем при каждом возврате
+                        // в приложение: это один документ пользователя плюс агрегат,
+                        // а не чтение всего списка уведомлений.
+                        val lifecycleOwner = LocalLifecycleOwner.current
+                        DisposableEffect(lifecycleOwner) {
+                            val observer =
+                                LifecycleEventObserver { _, event ->
+                                    if (event == Lifecycle.Event.ON_RESUME) {
+                                        notificationsViewModel.refreshUnread()
+                                    }
+                                }
+                            lifecycleOwner.lifecycle.addObserver(observer)
+                            onDispose { lifecycleOwner.lifecycle.removeObserver(observer) }
+                        }
+
+                        val notificationsHandler: (String) -> Unit =
+                            run {
+                                val context = LocalContext.current
+                                { message -> Toast.makeText(context, message, Toast.LENGTH_SHORT).show() }
+                            }
+
                         val navBackStackEntry by navController.currentBackStackEntryAsState()
                         val currentRoute = navBackStackEntry?.destination?.route
+
+                        // Колокольчик обновляем при переходах между экранами:
+                        // один документ пользователя плюс агрегат, без списка.
+                        // На экране уведомлений счётчик обновляет сам экран.
+                        LaunchedEffect(currentRoute) {
+                            if (currentRoute != null && currentRoute != Screen.NOTIFICATIONS) {
+                                notificationsViewModel.refreshUnread()
+                            }
+                        }
 
                         val showBottomBar =
                             currentRoute == Screen.TASKS ||
                                 currentRoute == Screen.PROJECTS ||
-                                currentRoute == Screen.PROJECT_TASKS
+                                currentRoute == Screen.PROJECT_TASKS ||
+                                currentRoute == Screen.PROFILE
 
                         Column(Modifier.fillMaxSize()) {
                             NavHost(
@@ -123,8 +181,10 @@ class MainActivity : ComponentActivity() {
                                             navController.navigate("task_detail/$taskId")
                                         },
                                         onNavigateToProjects = { navController.navigateToTab(Screen.PROJECTS) },
-                                        onNavigateToProfile = { },
+                                        onNavigateToProfile = { navController.navigateToTab(Screen.PROFILE) },
+                                        onNavigateToNotifications = { navController.navigate(Screen.NOTIFICATIONS) },
                                         onTaskSwipe = tasksViewModel::onTaskSwipe,
+                                        hasUnreadNotifications = notificationsState.hasUnread,
                                     )
                                 }
 
@@ -136,6 +196,8 @@ class MainActivity : ComponentActivity() {
                                         onNavigateToProjectTasks = { projectId ->
                                             navController.navigate("project_tasks/$projectId")
                                         },
+                                        onNavigateToNotifications = { navController.navigate(Screen.NOTIFICATIONS) },
+                                        hasUnreadNotifications = notificationsState.hasUnread,
                                     )
                                 }
 
@@ -164,7 +226,12 @@ class MainActivity : ComponentActivity() {
                                                 type = NavType.StringType
                                             },
                                         ),
-                                ) {
+                                ) { backStackEntry ->
+                                    val projectId = backStackEntry.arguments?.getString("projectId").orEmpty()
+
+                                    // 1. Создаем ViewModel для добавления участников, привязанный к экрану редактирования
+                                    val addParticipantViewModel: AddProjectParticipantViewModel =
+                                        viewModel(viewModelStoreOwner = backStackEntry)
                                     EditProjectRoute(
                                         onNavigateBack = { navController.safePopBackStack() },
                                         onProjectSaved = {
@@ -173,6 +240,10 @@ class MainActivity : ComponentActivity() {
                                         onProjectDeleted = {
                                             navController.safePopBackStack()
                                         },
+                                        onAddParticipantClick = {
+                                            navController.navigate("add_project_participant?projectId=$projectId")
+                                        },
+                                        addParticipantViewModel = addParticipantViewModel,
                                     )
                                 }
 
@@ -194,7 +265,7 @@ class MainActivity : ComponentActivity() {
                                         },
                                         onNavigateToTasks = { navController.navigateToTab(Screen.TASKS) },
                                         onNavigateToProjects = { navController.safePopBackStack() },
-                                        onNavigateToProfile = { /* TODO: Профиль */ },
+                                        onNavigateToProfile = { navController.navigateToTab(Screen.PROFILE) },
                                         onNavigateToProjectDetail = { projectId ->
                                             navController.navigate(
                                                 "project_detail/$projectId",
@@ -230,10 +301,10 @@ class MainActivity : ComponentActivity() {
                                             },
                                         ),
                                 ) { backStackEntry ->
-                                    val projectId =
-                                        backStackEntry.arguments?.getString("projectId").orEmpty()
+                                    val projectId = backStackEntry.arguments?.getString("projectId").orEmpty()
 
                                     if (projectId.isBlank()) {
+                                        // --- CREATE FLOW (Создание нового проекта) ---
                                         val createProjectEntry =
                                             remember(backStackEntry) {
                                                 runCatching { navController.getBackStackEntry(Screen.CREATE_PROJECT) }.getOrNull()
@@ -262,6 +333,33 @@ class MainActivity : ComponentActivity() {
                                             onBackClick = { navController.safePopBackStack() },
                                             onInvited = { navController.safePopBackStack() },
                                         )
+                                        // --- EDIT FLOW (Редактирование существующего проекта) ---
+                                        // Получаем backStackEntry экрана редактирования по его маршруту с ID
+                                        val editProjectRoute = "edit_project/$projectId"
+                                        val editProjectEntry =
+                                            remember(backStackEntry, projectId) {
+                                                runCatching { navController.getBackStackEntry(editProjectRoute) }.getOrNull()
+                                            }
+
+                                        if (editProjectEntry != null) {
+                                            // Берем тот же ViewModel, что и на экране редактирования
+                                            val addParticipantViewModel: AddProjectParticipantViewModel =
+                                                viewModel(viewModelStoreOwner = editProjectEntry)
+
+                                            AddParticipantRoute(
+                                                projectId = projectId,
+                                                onBackClick = { navController.safePopBackStack() },
+                                                onInvited = { navController.safePopBackStack() },
+                                                viewModel = addParticipantViewModel,
+                                            )
+                                        } else {
+                                            // Fallback (если экран редактирования потерялся из стека)
+                                            AddParticipantRoute(
+                                                projectId = projectId,
+                                                onBackClick = { navController.safePopBackStack() },
+                                                onInvited = { navController.safePopBackStack() },
+                                            )
+                                        }
                                     }
                                 }
 
@@ -434,6 +532,45 @@ class MainActivity : ComponentActivity() {
                                         },
                                     )
                                 }
+
+                                // Профиль
+                                composable(Screen.PROFILE) {
+                                    ProfileRoute(
+                                        onNavigateToNotifications = { navController.navigate(Screen.NOTIFICATIONS) },
+                                        onNavigateToEditProfile = { navController.navigate(Screen.EDIT_PROFILE) },
+                                        hasUnreadNotifications = notificationsState.hasUnread,
+                                        onChangePasswordClick = {
+                                            notificationsHandler("Смена пароля пока недоступна")
+                                        },
+                                        onAccountDeleted = {
+                                            notificationsHandler("Аккаунт удалён")
+                                            notificationsViewModel.reset()
+                                            isAuthenticated = false
+                                        },
+                                        onLoggedOut = {
+                                            notificationsViewModel.reset()
+                                            isAuthenticated = false
+                                        },
+                                    )
+                                }
+
+                                // Изменение профиля
+                                composable(Screen.EDIT_PROFILE) {
+                                    EditProfileRoute(
+                                        onNavigateBack = { navController.safePopBackStack() },
+                                        onProfileSaved = { navController.safePopBackStack() },
+                                        onNavigateToNotifications = { navController.navigate(Screen.NOTIFICATIONS) },
+                                        hasUnreadNotifications = notificationsState.hasUnread,
+                                    )
+                                }
+
+                                // Уведомления
+                                composable(Screen.NOTIFICATIONS) {
+                                    NotificationsRoute(
+                                        viewModel = notificationsViewModel,
+                                        onNavigateBack = { navController.safePopBackStack() },
+                                    )
+                                }
                             }
 
                             BackHandler(
@@ -464,8 +601,8 @@ class MainActivity : ComponentActivity() {
                                             NavItem(
                                                 "person",
                                                 stringResource(R.string.navigation_profile),
-                                                selected = false,
-                                                onClick = { },
+                                                selected = currentRoute == Screen.PROFILE,
+                                                onClick = { navController.navigateToTab(Screen.PROFILE) },
                                             ),
                                         ),
                                     modifier = Modifier.navigationBarsPadding(),
