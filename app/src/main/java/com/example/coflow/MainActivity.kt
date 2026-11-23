@@ -725,7 +725,13 @@ class MainActivity : ComponentActivity() {
                                                 selected =
                                                     currentRoute == Screen.PROJECTS ||
                                                         currentRoute == Screen.PROJECT_TASKS,
-                                                onClick = { navController.navigateToTab(Screen.PROJECTS) },
+                                                onClick = {
+                                                    if (currentRoute == Screen.PROJECTS || currentRoute == Screen.PROJECT_TASKS) {
+                                                        navController.popBackStack(Screen.PROJECTS, inclusive = false)
+                                                    } else {
+                                                        navController.navigateToTab(Screen.PROJECTS)
+                                                    }
+                                                },
                                             ),
                                             NavItem(
                                                 "person",
