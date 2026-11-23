@@ -3,9 +3,11 @@ package com.example.coflow.repositories
 import com.example.coflow.models.UserModel
 import com.example.coflow.repositories.dto.UserAddDto
 import com.example.coflow.repositories.dto.UserUpdateDto
+import com.google.firebase.auth.FirebaseAuth
 import com.google.firebase.firestore.CollectionReference
 import com.google.firebase.firestore.DocumentSnapshot
 import com.google.firebase.firestore.FirebaseFirestore
+import com.google.firebase.firestore.SetOptions
 import kotlinx.coroutines.tasks.await
 import java.util.Date
 
@@ -20,6 +22,8 @@ class FirebaseUserRepositoryImpl(
     private val db: FirebaseFirestore = FirebaseFirestore.getInstance(),
 ) : UserRepository {
     private val userCollection: CollectionReference = db.collection("users")
+    // Лениво: репозиторий можно создать и без инициализированного Firebase Auth.
+    private val auth: FirebaseAuth by lazy { FirebaseAuth.getInstance() }
 
     override suspend fun getById(id: String): Result<UserModel> =
         try {
@@ -56,18 +60,49 @@ class FirebaseUserRepositoryImpl(
 
     override suspend fun addUser(user: UserAddDto): Result<UserModel> =
         try {
-            val userDocument = userCollection.document()
-            val saved =
-                UserModel(
-                    uid = userDocument.id,
-                    name = user.name,
-                    email = user.email,
-                    createdAt = Date(),
-                    isDeleted = false,
-                )
+            val email = user.email.trim()
+            require(email.isNotBlank()) { "Почта пользователя не задана" }
 
-            userDocument.set(saved.toFirestoreMap()).await()
-            Result.success(saved)
+            // Один профиль на почту: повторный вызов обновляет существующий
+            // документ вместо создания ещё одного с новым случайным id.
+            val existingDocument =
+                userCollection
+                    .whereEqualTo("email", email)
+                    .get()
+                    .await()
+                    .documents
+                    .firstOrNull()
+
+            if (existingDocument != null) {
+                existingDocument.reference.update("name", user.name).await()
+                val existing =
+                    existingDocument.toUserModel()?.copy(name = user.name)
+                        ?: throw Exception("Ошибка чтения пользователя")
+                Result.success(existing)
+            } else {
+                // Если пользователь авторизован, профиль обязан лежать в users/{uid}:
+                // случайный id потом не найдётся при входе и превратится в дубль.
+                val targetUid = auth.currentUser?.uid?.takeIf { it.isNotBlank() }
+                val userDocument =
+                    if (targetUid != null) {
+                        userCollection.document(targetUid)
+                    } else {
+                        userCollection.document()
+                    }
+
+                val saved =
+                    UserModel(
+                        uid = userDocument.id,
+                        name = user.name,
+                        email = email,
+                        createdAt = Date(),
+                        isDeleted = false,
+                    )
+
+                // merge не стирает служебные поля вроде notificationsReadAt.
+                userDocument.set(saved.toFirestoreMap(), SetOptions.merge()).await()
+                Result.success(saved)
+            }
         } catch (e: Exception) {
             Result.failure(Exception(e.message ?: "Ошибка создания пользователя"))
         }
@@ -104,6 +139,7 @@ class FirebaseUserRepositoryImpl(
 
 private fun UserModel.toFirestoreMap(): Map<String, Any> =
     buildMap {
+        put("uid", uid) // Добавлено явное сохранение uid
         put("name", name)
         put("email", email)
         put("is_deleted", isDeleted)
