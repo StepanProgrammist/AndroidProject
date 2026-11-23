@@ -73,6 +73,8 @@ fun ProjectsRoute(
     onNavigateToCreateProject: () -> Unit,
     onNavigateToTasks: () -> Unit,
     onNavigateToProjectTasks: (String) -> Unit,
+    onNavigateToNotifications: () -> Unit,
+    hasUnreadNotifications: Boolean = false,
     viewModel: ProjectsViewModel = viewModel(),
 ) {
     val state by viewModel.state.collectAsStateWithLifecycle()
@@ -85,6 +87,8 @@ fun ProjectsRoute(
         onNavigateToCreateProject = onNavigateToCreateProject,
         onNavigateToTasks = onNavigateToTasks,
         onNavigateToProjectTasks = onNavigateToProjectTasks,
+        onNavigateToNotifications = onNavigateToNotifications,
+        hasUnreadNotifications = hasUnreadNotifications,
     )
 }
 
@@ -98,38 +102,12 @@ fun ProjectsScreen(
     onNavigateToCreateProject: () -> Unit,
     onNavigateToTasks: () -> Unit,
     onNavigateToProjectTasks: (String) -> Unit,
+    onNavigateToNotifications: () -> Unit,
+    hasUnreadNotifications: Boolean = false,
 ) {
     // Стейт для скролла и скрытия нижней панели
     val listState = rememberLazyListState()
     var isBottomPanelVisible by remember { mutableStateOf(true) }
-    var prevIndex by remember { mutableIntStateOf(0) }
-    var prevOffset by remember { mutableIntStateOf(0) }
-
-    // Логика: скрываем панель при скролле вниз, показываем при скролле вверх
-    LaunchedEffect(listState) {
-        snapshotFlow { listState.firstVisibleItemIndex to listState.firstVisibleItemScrollOffset }
-            .collect { (index, offset) ->
-                if (index > prevIndex) {
-                    isBottomPanelVisible = false
-                    prevIndex = index
-                    prevOffset = offset
-                } else if (index < prevIndex) {
-                    isBottomPanelVisible = true
-                    prevIndex = index
-                    prevOffset = offset
-                } else {
-                    // Буфер 10 пикселей, чтобы панель не дергалась от мелких движений
-                    val delta = offset - prevOffset
-                    if (delta > 10) {
-                        if (isBottomPanelVisible) isBottomPanelVisible = false
-                        prevOffset = offset
-                    } else if (delta < -10) {
-                        if (!isBottomPanelVisible) isBottomPanelVisible = true
-                        prevOffset = offset
-                    }
-                }
-            }
-    }
 
     Column(
         modifier =
@@ -143,7 +121,10 @@ fun ProjectsScreen(
             title = stringResource(R.string.projects_header),
             subtitle = "${state.activeCount} ${stringResource(R.string.my_tasks_active)}",
             trailingContent = {
-                NotificationBell()
+                NotificationBell(
+                    hasUnread = hasUnreadNotifications,
+                    onClick = onNavigateToNotifications,
+                )
             },
         )
 
@@ -160,7 +141,7 @@ fun ProjectsScreen(
         // Список проектов (занимает всё свободное место)
         LazyColumn(
             state = listState,
-            modifier = Modifier.weight(1f),
+            modifier = Modifier.weight(1f).padding(bottom = 8.dp),
             verticalArrangement = Arrangement.spacedBy(10.dp),
             contentPadding = PaddingValues(bottom = 16.dp),
         ) {
@@ -188,10 +169,7 @@ fun ProjectsScreen(
         // Нижняя панель
         AnimatedVisibility(visible = isBottomPanelVisible) {
             Column(
-                modifier =
-                    Modifier.fillMaxWidth().padding(
-                        bottom = WindowInsets.navigationBars.asPaddingValues().calculateBottomPadding() + 2.dp,
-                    ),
+                modifier = Modifier.fillMaxWidth().padding(bottom = 8.dp), // ← маленький фиксированный
                 horizontalAlignment = Alignment.CenterHorizontally,
             ) {
                 Row(
@@ -213,28 +191,6 @@ fun ProjectsScreen(
                     // Кнопка "+" (FAB)
                     CoFlowFabButton(onClick = onNavigateToCreateProject, iconName = "folder_plus")
                 }
-
-                Spacer(Modifier.height(7.dp))
-
-                // Нижнее меню (Навигация)
-                CoFlowBottomNavigationBar(
-                    items =
-                        listOf(
-                            NavItem(
-                                icon = "tasks",
-                                title = stringResource(R.string.navigation_tasks),
-                                selected = false,
-                                onClick = onNavigateToTasks,
-                            ),
-                            NavItem(icon = "folder", title = stringResource(R.string.navigation_projects), selected = true, onClick = {}),
-                            NavItem(
-                                icon = "person",
-                                title = stringResource(R.string.navigation_profile),
-                                selected = false,
-                                onClick = { /* TODO */ },
-                            ),
-                        ),
-                )
             }
         }
     }
@@ -429,6 +385,7 @@ private fun ProjectsScreenPreview() {
             onNavigateToCreateProject = {},
             onNavigateToTasks = {},
             onNavigateToProjectTasks = {},
+            onNavigateToNotifications = {},
         )
     }
 }

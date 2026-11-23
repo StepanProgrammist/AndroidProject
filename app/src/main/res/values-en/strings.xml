@@ -68,8 +68,24 @@
     <string name="auth_error_invalid_contact">Check email or phone format</string>
     <string name="auth_error_short_password">Minimum 8 characters</string>
     <string name="auth_error_not_equal_password">The passwords do not match.</string>
+    <string name="auth_error_username_empty">Enter username</string>
+    <string name="auth_error_username_short">Username is too short</string>
+    <string name="auth_error_contact_empty">Enter email</string>
+    <string name="auth_error_password_digit">Password must contain at least one digit</string>
+    <string name="auth_error_password_letter">Password must contain at least one letter</string>
     <string name="task_outdated">Expired</string>
     <string name="error_project_id_missing">Project ID not provided</string>
+
+    <string name="error_load_task">Error loading task</string>
+    <string name="error_update_task">Error updating task</string>
+    <string name="error_delete_task">Error deleting task</string>
+    <string name="error_empty_task_title">Task title cannot be empty</string>
+    <string name="error_create_task">Error creating task</string>
+    <string name="error_load_assignees">Error loading assignees</string>
+    <string name="error_load_project_list">Error loading projects</string>
+
+    <string name="error_empty_project_title">Project title cannot be empty</string>
+    <string name="error_create_project">Error creating project</string>
 
     <!-- Группы -->
     <string name="error_not_authorized">User not logged in</string>
@@ -112,16 +128,16 @@
     <string name="notification_message">Notifications interface not implemented yet.</string>
     <string name="dialog_ok">Got it</string>
 
-    <!-- Строка для подтверждения действия с задачей -->
-    <string name="task_action_confirm_take">Take task?</string>
-    <string name="task_action_confirm_complete">Complete task?</string>
-    <string name="task_action_message_take">Are you sure you want to take the task "%1$s"?</string>
-    <string name="task_action_message_complete">Are you sure you want to mark the task "%1$s" as completed?</string>
-    <string name="task_action_taken">Task taken successfully</string>
-    <string name="task_action_completed">Task completed successfully</string>
-    <string name="task_action_button_take">Take</string>
-    <string name="task_action_button_complete">Complete</string>
-    <string name="task_action_button_cancel">Cancel</string>
+        <!-- Строка для подтверждения действия с задачей -->
+        <string name="task_action_confirm_take">Take task?</string>
+        <string name="task_action_confirm_complete">Complete task?</string>
+        <string name="task_action_message_take">Do you really want to take task "%1$s" into work?</string>
+        <string name="task_action_message_complete">Do you really want to mark task "%1$s" as completed?</string>
+        <string name="task_action_taken">Task taken successfully</string>
+        <string name="task_action_completed">Task completed successfully</string>
+        <string name="task_action_button_take">Take</string>
+        <string name="task_action_button_complete">Complete</string>
+        <string name="task_action_button_cancel">Cancel</string>
 
     <!-- Навигация -->
     <string name="navigation_tasks">My tasks</string>
@@ -197,6 +213,11 @@
     <string name="assignee_you">You</string>
     <string name="deadline_header">Deadline</string>
 
+    <!-- Экран добавления участника -->
+    <string name="add_participant_header">Add Participant</string>
+    <string name="enter_email_placeholder">Enter email address</string>
+    <string name="save_participant_button">Save</string>
+
     <!-- Общие сообщения -->
     <string name="error_title">Error</string>
     <string name="ok_button">OK</string>
@@ -214,14 +235,14 @@
     <string name="project_description_label">Description</string>
     <string name="project_owner_label">Owner</string>
     <string name="participants_header">Participants</string>
-    <string name="search_participants_placeholder">Search...</string>
+    <string name="search_participants_placeholder">Name or email</string>
     <string name="participants_placeholder">No participants yet</string>
 
     <!-- Project statuses -->
     <string name="project_status_archived">Archived</string>
 
     <!-- Roles -->
-    <string name="role_owner">Owner</string>
+    <string name="role_owner">Admin</string>
     <string name="role_member">Member</string>
 
     <!-- Edit oles -->

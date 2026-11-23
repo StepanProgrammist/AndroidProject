@@ -52,6 +52,9 @@ interface ProjectRepository {
      */
     fun observeByUserId(id: String): Flow<Result<List<ProjectModel>>>
 
+    /** Наблюдает за изменениями конкретного проекта в реальном времени. */
+    fun observeById(id: String): Flow<Result<ProjectModel>>
+
     /**
      * Создаёт проект из [ProjectAddDto].
      * ID генерирует репозиторий, `updatedAt` и `isDeleted` выставляются автоматически.

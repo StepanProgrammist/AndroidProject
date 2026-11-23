@@ -158,7 +158,8 @@ class FirebaseProjectRepositoryImpl(
         }
 
         val projectIds =
-            snapshot?.documents
+            snapshot
+                ?.documents
                 ?.mapNotNull { it.getString("projectId") }
                 ?.filter { it.isNotBlank() }
                 ?.toSet()
@@ -216,6 +217,24 @@ class FirebaseProjectRepositoryImpl(
                 state.memberProjectRegistrations.values.forEach { it.remove() }
                 state.memberProjectRegistrations.clear()
             }
+        }
+
+    override fun observeById(id: String): Flow<Result<ProjectModel>> =
+        callbackFlow {
+            val listener =
+                projectCollection.document(id).addSnapshotListener { snapshot, error ->
+                    if (error != null) {
+                        trySend(Result.failure(Exception(error.message ?: "Ошибка наблюдения за проектом")))
+                        return@addSnapshotListener
+                    }
+                    val project = snapshot?.toProjectModel()
+                    if (project == null) {
+                        trySend(Result.failure(Exception("Проект не найден")))
+                    } else {
+                        trySend(Result.success(project))
+                    }
+                }
+            awaitClose { listener.remove() }
         }
 
     override suspend fun addProject(project: ProjectAddDto): Result<ProjectModel> =

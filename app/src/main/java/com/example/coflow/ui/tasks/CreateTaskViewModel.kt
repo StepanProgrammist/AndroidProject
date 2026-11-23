@@ -3,7 +3,10 @@ package com.example.coflow.ui.tasks
 import androidx.compose.ui.graphics.Color
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.example.coflow.R
+import com.example.coflow.models.TaskModel
 import com.example.coflow.models.TaskStatus
+import com.example.coflow.notifications.NotificationSender
 import com.example.coflow.repositories.AuthRepository
 import com.example.coflow.repositories.FirebaseAuthRepositoryImpl
 import com.example.coflow.repositories.FirebaseMembershipRepositoryImpl
@@ -55,31 +58,34 @@ data class CreateTaskUiState(
     // --- Основные поля формы ---
     val title: String = "",
     val description: String = "",
-    // --- Исполнители ---
+    // --- Исполнители (реализация интерфейса) ---
     val assignees: List<Assignee> = emptyList(), // Уже подтверждённые исполнители
-    val allAssignees: List<Assignee> = emptyList(), // Полный список доступных исполнителей
-    val assigneeSearchQuery: String = "", // Текущий текст в поле поиска
-    val pendingAssigneeIds: Set<String> = emptySet(), // Временно выбранные ID на экране выбора
-    val isLoadingAssignees: Boolean = false,
+    override val allAssignees: List<Assignee> = emptyList(), // Полный список доступных исполнителей
+    override val assigneeSearchQuery: String = "", // Текущий текст в поле поиска
+    override val pendingAssigneeIds: Set<String> = emptySet(), // Временно выбранные ID на экране выбора
+    override val isLoadingAssignees: Boolean = false,
     // --- Дата и время ---
-    val selectedDueDate: LocalDate = LocalDate.now(),
-    val calendarMonth: YearMonth = YearMonth.now(),
-    val dueDate: String = "",
+    override val selectedDueDate: LocalDate = LocalDate.now(),
+    override val calendarMonth: YearMonth = YearMonth.now(),
+    override val dueDate: String = "",
     // --- Проект ---
     val selectedProjectId: String = "",
     val project: String = "",
-    val allProjects: List<String> = emptyList(),
-    val allProjectItems: List<ProjectItem> = emptyList(),
-    val projectSearchQuery: String = "",
-    val pendingProjectId: String = "",
-    val pendingProject: String = "",
+    override val allProjects: List<String> = emptyList(),
+    override val allProjectItems: List<ProjectItem> = emptyList(),
+    override val projectSearchQuery: String = "",
+    override val pendingProjectId: String = "",
+    override val pendingProject: String = "",
     val isLoadingProjects: Boolean = false,
     // --- Статус и ошибки ---
     val errorMessage: String? = null,
+    val errorMessageResId: Int? = null,
     val isSubmitting: Boolean = false,
-) {
+) : AssigneeSelectionState,
+    DateSelectionState,
+    ProjectSelectionState {
     /** Отфильтрованный список исполнителей на основе поискового запроса */
-    val filteredAssignees: List<Assignee>
+    override val filteredAssignees: List<Assignee>
         get() =
             if (assigneeSearchQuery.isBlank()) {
                 allAssignees
@@ -91,7 +97,7 @@ data class CreateTaskUiState(
             }
 
     /** Отфильтрованный список проектов на основе поискового запроса. */
-    val filteredProjects: List<String>
+    override val filteredProjects: List<String>
         get() =
             if (projectSearchQuery.isBlank()) {
                 allProjects
@@ -100,15 +106,15 @@ data class CreateTaskUiState(
             }
 
     /** Количество временно выбранных исполнителей (для отображения в UI). */
-    val pendingSelectedCount: Int
+    override val pendingSelectedCount: Int
         get() = pendingAssigneeIds.size
 
     /** Кнопка "Готово" на экране выбора исполнителей активна, если выбран хотя бы один. */
-    val canConfirmAssignees: Boolean
+    override val canConfirmAssignees: Boolean
         get() = pendingAssigneeIds.isNotEmpty()
 
     /** Кнопка "Готово" на экране выбора проекта активна, если проект выбран. */
-    val canConfirmProject: Boolean get() = pendingProject.isNotBlank() || pendingProjectId.isNotBlank()
+    override val canConfirmProject: Boolean get() = pendingProject.isNotBlank() || pendingProjectId.isNotBlank()
 
     /**
      * Главная кнопка "Создать задачу" активна только при заполнении обязательного поля (название)
@@ -128,6 +134,7 @@ class CreateTaskViewModel(
     private val authRepository: AuthRepository = FirebaseAuthRepositoryImpl(),
     private val membershipRepository: MembershipRepository = FirebaseMembershipRepositoryImpl(),
     private val userRepository: UserRepository = FirebaseUserRepositoryImpl(),
+    private val notificationSender: NotificationSender = NotificationSender(),
 ) : ViewModel() {
     private val _state = MutableStateFlow(CreateTaskUiState())
     val state: StateFlow<CreateTaskUiState> = _state.asStateFlow()
@@ -210,7 +217,8 @@ class CreateTaskViewModel(
                 _state.update {
                     it.copy(
                         isLoadingAssignees = false,
-                        errorMessage = "Ошибка загрузки исполнителей: ${e.message ?: "неизвестная ошибка"}",
+                        errorMessage = e.message,
+                        errorMessageResId = if (e.message == null) R.string.error_load_assignees else null,
                     )
                 }
             }
@@ -233,7 +241,8 @@ class CreateTaskViewModel(
                         _state.update {
                             it.copy(
                                 isLoadingProjects = false,
-                                errorMessage = "Ошибка загрузки проектов: ${error?.message ?: "неизвестная ошибка"}",
+                                errorMessage = error?.message,
+                                errorMessageResId = if (error?.message == null) R.string.error_load_project_list else null,
                             )
                         }
                         return@launch
@@ -261,7 +270,8 @@ class CreateTaskViewModel(
                 _state.update {
                     it.copy(
                         isLoadingProjects = false,
-                        errorMessage = "Ошибка загрузки проектов: ${e.message ?: "неизвестная ошибка"}",
+                        errorMessage = e.message,
+                        errorMessageResId = if (e.message == null) R.string.error_load_project_list else null,
                     )
                 }
             }
@@ -386,7 +396,7 @@ class CreateTaskViewModel(
     fun onCreateTask(onTaskCreated: (CreateTaskFormData) -> Unit) {
         val current = _state.value
         if (current.title.isBlank()) {
-            _state.update { it.copy(errorMessage = "Название задачи не может быть пустым") }
+            _state.update { it.copy(errorMessageResId = R.string.error_empty_task_title) }
             return
         }
 
@@ -423,8 +433,9 @@ class CreateTaskViewModel(
             val result = taskRepository.addTask(taskDto)
 
             result.fold(
-                onSuccess = {
+                onSuccess = { task ->
                     _state.update { it.copy(isSubmitting = false) }
+                    notifyAssignees(task, authorId, current.project)
                     onTaskCreated(
                         CreateTaskFormData(
                             title = current.title.trim(),
@@ -439,7 +450,8 @@ class CreateTaskViewModel(
                     _state.update {
                         it.copy(
                             isSubmitting = false,
-                            errorMessage = error.message ?: "Ошибка создания задачи",
+                            errorMessage = error.message,
+                            errorMessageResId = if (error.message == null) R.string.error_create_task else null,
                         )
                     }
                 },
@@ -449,5 +461,29 @@ class CreateTaskViewModel(
 
     fun clearError() {
         _state.update { it.copy(errorMessage = null) }
+    }
+
+    /**
+     * Уведомляет исполнителей о назначенной задаче.
+     *
+     * Запись создаёт клиент после успешного сохранения задачи. Ошибка
+     * уведомления не должна отменять создание задачи, поэтому
+     * [NotificationSender] не пробрасывает её наружу.
+     */
+    private suspend fun notifyAssignees(
+        task: TaskModel,
+        authorId: String,
+        projectTitle: String,
+    ) {
+        if (authorId.isBlank()) return
+
+        notificationSender.taskAssigned(
+            taskId = task.id,
+            taskTitle = task.title,
+            projectId = task.projectId,
+            projectName = projectTitle,
+            actorId = authorId,
+            recipientIds = _state.value.assignees.map { it.id },
+        )
     }
 }
