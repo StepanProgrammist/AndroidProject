@@ -13,6 +13,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.shadow
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.unit.dp
 import com.example.coflow.ui.theme.CoFlowColors
 import com.example.coflow.ui.theme.CoFlowGlassStyles
@@ -23,26 +24,30 @@ fun CoFlowGlassCard(
     modifier: Modifier = Modifier,
     shape: RoundedCornerShape = CoFlowGlassStyles.CardShape,
     isSelected: Boolean = false, // <-- НОВЫЙ ПАРАМЕТР
+    containerColor: Color? = null,
     onClick: (() -> Unit)? = null,
-    content: @Composable ColumnScope.() -> Unit
+    content: @Composable ColumnScope.() -> Unit,
 ) {
     val clickModifier = if (onClick != null) Modifier.clickable(onClick = onClick) else Modifier
 
-    // Вычисляем цвет фона в зависимости от состояния
-    val backgroundColor = if (isSelected) {
-        CoFlowColors.Blue.copy(alpha = 0.12f) // Голубой фон при выборе
-    } else {
-        CoFlowGlassStyles.Surface // Дефолтный полупрозрачный белый фон
-    }
+    // Вычисляем цвет фона в зависимости от состояния.
+    // containerColor позволяет экрану задать свой фон, не меняя поведение остальных.
+    val backgroundColor =
+        containerColor ?: if (isSelected) {
+            CoFlowColors.Blue.copy(alpha = 0.12f) // Голубой фон при выборе
+        } else {
+            CoFlowGlassStyles.Surface // Дефолтный полупрозрачный белый фон
+        }
 
     Column(
-        modifier = modifier
-            .shadow(elevation = 2.dp, shape = shape, ambientColor = CoFlowGlassStyles.Shadow, spotColor = CoFlowGlassStyles.Shadow)
-            .clip(shape)
-            .background(backgroundColor) // <-- ПРИМЕНЯЕМ ВЫЧИСЛЕННЫЙ ФОН
-            .border(1.dp, CoFlowGlassStyles.BlueBorder, shape)
-            .padding(horizontal = 12.dp, vertical = 9.dp)
-            .then(clickModifier)
+        modifier =
+            modifier
+                .shadow(elevation = 2.dp, shape = shape, ambientColor = CoFlowGlassStyles.Shadow, spotColor = CoFlowGlassStyles.Shadow)
+                .clip(shape)
+                .background(backgroundColor) // <-- ПРИМЕНЯЕМ ВЫЧИСЛЕННЫЙ ФОН
+                .border(1.dp, CoFlowGlassStyles.BlueBorder, shape)
+                .padding(horizontal = 12.dp, vertical = 9.dp)
+                .then(clickModifier),
     ) {
         content()
     }
@@ -51,14 +56,14 @@ fun CoFlowGlassCard(
 @Composable
 fun CoFlowAuthCard(
     modifier: Modifier = Modifier,
-    content: @Composable ColumnScope.() -> Unit
+    content: @Composable ColumnScope.() -> Unit,
 ) {
     Surface(
         modifier = modifier,
         shape = CoFlowShapes.Card,
         color = CoFlowColors.CardBackground,
         border = BorderStroke(1.dp, CoFlowColors.BlueBorder.copy(alpha = 0.75f)),
-        shadowElevation = 0.dp
+        shadowElevation = 0.dp,
     ) {
         Column(modifier = Modifier.padding(horizontal = 18.dp, vertical = 20.dp)) {
             content()
