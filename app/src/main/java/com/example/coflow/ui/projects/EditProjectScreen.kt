@@ -78,9 +78,39 @@ fun EditProjectScreen(
     onDescriptionChange: (String) -> Unit,
     onMemberRoleChange: (String, Role) -> Unit,
     onMemberRemoveClick: (String) -> Unit,
+    onClearError: () -> Unit,
     onAddParticipantClick: () -> Unit,
     onRemoveNewParticipant: (ProjectParticipant) -> Unit,
 ) {
+    // Вычисляем текст ошибки (из ресурса или сырой)
+    val errorText =
+        when {
+            state.errorMessageResId != null && state.errorMessage != null -> {
+                stringResource(state.errorMessageResId, state.errorMessage)
+            }
+
+            state.errorMessageResId != null -> {
+                stringResource(state.errorMessageResId)
+            }
+
+            else -> {
+                state.errorMessage
+            }
+        }
+
+    if (errorText != null) {
+        AlertDialog(
+            onDismissRequest = onClearError,
+            title = { Text(stringResource(R.string.error_title), color = CoFlowColors.Error) },
+            text = { Text(errorText) },
+            confirmButton = {
+                TextButton(onClick = onClearError) {
+                    Text(stringResource(R.string.ok_button), color = CoFlowColors.Blue)
+                }
+            },
+        )
+    }
+
     val focusManager = LocalFocusManager.current
 
     BackHandler(onBack = onBackClick)
@@ -494,6 +524,7 @@ fun EditProjectRoute(
         onDescriptionChange = viewModel::onDescriptionChange,
         onMemberRoleChange = viewModel::changeMemberRole,
         onMemberRemoveClick = viewModel::removeMember,
+        onClearError = viewModel::clearError,
         onAddParticipantClick = onAddParticipantClick,
         onRemoveNewParticipant = { participant ->
             // Убираем из общего источника — AddProjectParticipantViewModel,
@@ -553,6 +584,7 @@ fun EditProjectScreen_Preview() {
             onDescriptionChange = {},
             onMemberRoleChange = { _, _ -> },
             onMemberRemoveClick = {},
+            onClearError = {},
             onAddParticipantClick = {},
             onRemoveNewParticipant = {},
         )
