@@ -16,13 +16,14 @@ import kotlinx.coroutines.launch
 /*
  * Логика экрана «Изменение профиля».
  *
- * Уже работает: чтение профиля, валидация полей, сохранение в users/{uid}.
+ * Уже работает: чтение профиля и сохранение имени в users/{uid}.
+ * Почта показывается только для чтения: менять её здесь нельзя.
  *
  * TODO(редактирование профиля):
- * - смена почты сейчас меняет только Firestore. Для входа нужен
- *   AuthRepository.updateEmail(...) с повторной аутентификацией;
+ * - смена почты требует AuthRepository.updateEmail(...) с повторной
+ *   аутентификацией, поэтому поле заблокировано;
  * - имя можно дублировать в FirebaseUser.displayName;
- * - ограничение длины имени и проверка занятости почты.
+ * - ограничение длины имени.
  */
 
 /** Состояние экрана «Изменение профиля». */
@@ -32,12 +33,11 @@ data class EditProfileUiState(
     val isLoading: Boolean = true,
     val isSaving: Boolean = false,
     val nameError: String? = null,
-    val emailError: String? = null,
     val errorMessage: String? = null,
     val isSaved: Boolean = false,
 ) {
     val canSave: Boolean
-        get() = !isLoading && !isSaving && name.isNotBlank() && email.isNotBlank()
+        get() = !isLoading && !isSaving && name.isNotBlank()
 }
 
 /**
@@ -100,26 +100,13 @@ class EditProfileViewModel(
         _state.update { it.copy(name = value, nameError = null, errorMessage = null) }
     }
 
-    fun onEmailChange(value: String) {
-        _state.update { it.copy(email = value, emailError = null, errorMessage = null) }
-    }
-
-    /** Проверяет поля и сохраняет профиль в Firestore. */
+    /** Проверяет имя и сохраняет его в Firestore. Почта не меняется. */
     fun onSaveClick() {
-        val current = _state.value
-        val name = current.name.trim()
-        val email = current.email.trim().lowercase()
-
+        val name = _state.value.name.trim()
         val nameError = if (name.isBlank()) "Введите имя" else null
-        val emailError =
-            when {
-                email.isBlank() -> "Введите почту"
-                !EMAIL_PATTERN.matches(email) -> "Некорректная почта"
-                else -> null
-            }
 
-        if (nameError != null || emailError != null) {
-            _state.update { it.copy(nameError = nameError, emailError = emailError) }
+        if (nameError != null) {
+            _state.update { it.copy(nameError = nameError) }
             return
         }
 
@@ -132,18 +119,14 @@ class EditProfileViewModel(
         _state.update { it.copy(isSaving = true, errorMessage = null) }
 
         viewModelScope.launch {
-            // TODO(редактирование профиля): после успешного сохранения обновить
-            //  почту и в Firebase Auth (AuthRepository.updateEmail), иначе вход
-            //  останется по старой почте.
             userRepository
                 .updateUser(
                     id = uid,
-                    update = UserUpdateDto(name = name, email = email),
+                    update = UserUpdateDto(name = name),
                 ).onSuccess { user ->
                     _state.update {
                         it.copy(
                             name = user.name,
-                            email = user.email,
                             isSaving = false,
                             isSaved = true,
                         )
@@ -162,9 +145,5 @@ class EditProfileViewModel(
     /** Сбрасывает флаг сохранения после навигации назад. */
     fun consumeSaved() {
         _state.update { it.copy(isSaved = false) }
-    }
-
-    private companion object {
-        val EMAIL_PATTERN = Regex("^[A-Za-z0-9+_.-]+@[A-Za-z0-9.-]+\\.[A-Za-z]{2,}$")
     }
 }
