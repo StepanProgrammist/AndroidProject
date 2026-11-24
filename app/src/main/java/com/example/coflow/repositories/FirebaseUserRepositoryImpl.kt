@@ -15,13 +15,15 @@ import java.util.Date
  * Firestore-реализация пользователей.
  *
  * Коллекция `users`; `name` и `email` — строки, `createdAt` — Timestamp,
- * `is_deleted` — Boolean. addUser() принимает UserAddDto и сам генерирует UID,
- * updateUser() меняет только переданные поля DTO.
+ * `is_deleted` — Boolean. [addUser] переиспользует существующий документ
+ * с такой же почтой или пишет в `users/{uid}` текущего Auth-пользователя,
+ * поэтому дубли не создаются. [updateUser] меняет только переданные поля DTO.
  */
 class FirebaseUserRepositoryImpl(
     private val db: FirebaseFirestore = FirebaseFirestore.getInstance(),
 ) : UserRepository {
     private val userCollection: CollectionReference = db.collection("users")
+
     // Лениво: репозиторий можно создать и без инициализированного Firebase Auth.
     private val auth: FirebaseAuth by lazy { FirebaseAuth.getInstance() }
 
@@ -82,7 +84,16 @@ class FirebaseUserRepositoryImpl(
             } else {
                 // Если пользователь авторизован, профиль обязан лежать в users/{uid}:
                 // случайный id потом не найдётся при входе и превратится в дубль.
-                val targetUid = auth.currentUser?.uid?.takeIf { it.isNotBlank() }
+                // Но писать в документ текущего пользователя можно, только если
+                // почта совпадает: иначе addUser(чужой email) испортит чужой профиль.
+                val authUser = auth.currentUser
+                val targetUid =
+                    authUser
+                        ?.uid
+                        ?.takeIf { uid ->
+                            uid.isNotBlank() &&
+                                authUser.email?.equals(email, ignoreCase = true) == true
+                        }
                 val userDocument =
                     if (targetUid != null) {
                         userCollection.document(targetUid)

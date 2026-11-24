@@ -44,12 +44,13 @@ import com.example.coflow.ui.theme.coFlowTasksBackgroundBrush
 /*
  * Экран «Изменение профиля».
  *
- * Уже работает: загрузка текущих имени/почты, валидация, сохранение в Firestore,
- * переход назад и на нижнюю навигацию.
+ * Уже работает: загрузка текущего профиля, сохранение имени в Firestore,
+ * переход назад и на нижнюю навигацию. Почта доступна только для чтения.
  *
  * Доделать:
- * 1) смена почты для входа: Firestore обновляется, Firebase Auth — нет;
- * 2) ограничение длины имени и проверка занятости почты;
+ * 1) смена почты: нужен AuthRepository.updateEmail(...) с повторной
+ *    аутентификацией, поэтому поле пока заблокировано;
+ * 2) ограничение длины имени;
  * 3) аватар (если решите делать фото);
  * 4) строки: вынести подписи в strings.xml.
  *
@@ -81,7 +82,6 @@ fun EditProfileRoute(
         state = state,
         onBackClick = onNavigateBack,
         onNameChange = viewModel::onNameChange,
-        onEmailChange = viewModel::onEmailChange,
         onSaveClick = viewModel::onSaveClick,
         onNotificationsClick = onNavigateToNotifications,
         hasUnreadNotifications = hasUnreadNotifications,
@@ -93,7 +93,6 @@ fun EditProfileScreen(
     state: EditProfileUiState,
     onBackClick: () -> Unit,
     onNameChange: (String) -> Unit,
-    onEmailChange: (String) -> Unit,
     onSaveClick: () -> Unit,
     onNotificationsClick: () -> Unit,
     hasUnreadNotifications: Boolean = false,
@@ -150,12 +149,12 @@ fun EditProfileScreen(
 
                 ProfileTextField(
                     value = state.email,
-                    onValueChange = onEmailChange,
+                    onValueChange = {},
                     label = "Почта",
                     placeholder = "name@example.com",
                     leadingIcon = Icons.Outlined.MailOutline,
-                    isError = state.emailError != null,
-                    supportingText = state.emailError,
+                    supportingText = "Почту изменить нельзя",
+                    enabled = false,
                     keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Email),
                 )
 
@@ -199,7 +198,6 @@ private fun EditProfileScreenPreview() {
                 ),
             onBackClick = {},
             onNameChange = {},
-            onEmailChange = {},
             onSaveClick = {},
             onNotificationsClick = {},
             hasUnreadNotifications = true,
