@@ -274,7 +274,7 @@ private fun AssigneeRow(assignee: AssigneeUi) {
 
         Column(modifier = Modifier.weight(1f)) {
             Text(
-                text = assignee.name + (if (assignee.isCurrentUser) " (вы)" else ""),
+                text = "${assignee.name}${if (assignee.isCurrentUser) " (${stringResource(R.string.assignee_you)})" else ""}",
                 fontWeight = FontWeight.Medium,
                 color = CoFlowColors.TextPrimary,
                 fontSize = 14.sp,
