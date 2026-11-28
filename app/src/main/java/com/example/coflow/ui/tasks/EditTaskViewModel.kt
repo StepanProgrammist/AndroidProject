@@ -560,7 +560,10 @@ class EditTaskViewModel(
 //        hideDeleteDialog()
 //    }
 
-    fun confirmDelete(onTaskDeleted: (String) -> Unit) {
+    fun confirmDelete(
+        onTaskDeleted: (String) -> Unit,
+        onBack: () -> Unit,
+    ) {
         val current = _state.value
         if (current.isDeleting) return
         if (current.taskId.isBlank()) {
@@ -587,6 +590,7 @@ class EditTaskViewModel(
                     )
                     _state.update { it.copy(isDeleting = false) }
                     onTaskDeleted(current.taskId)
+                    onBack()
                 },
                 onFailure = { error ->
                     _state.update {
