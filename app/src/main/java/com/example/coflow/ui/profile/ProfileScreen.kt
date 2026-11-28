@@ -54,7 +54,6 @@ import com.example.coflow.ui.components.CoFlowGlassCard
 import com.example.coflow.ui.components.CoFlowScreenHeader
 import com.example.coflow.ui.components.NotificationBell
 import com.example.coflow.ui.components.ProfileIconBadge
-import com.example.coflow.ui.components.ProfileMenuDivider
 import com.example.coflow.ui.components.ProfileMenuRow
 import com.example.coflow.ui.components.ProfileTextField
 import com.example.coflow.ui.theme.CoFlowColors
@@ -65,13 +64,12 @@ import com.example.coflow.ui.theme.coFlowTasksBackgroundBrush
 /*
  * Экран «Мой профиль».
  *
- * Уже работает: загрузка имени/почты, выход, удаление аккаунта с подтверждением,
+ * Уже работает: загрузка имени/почты, выход и удаление аккаунта с подтверждением,
  * переходы в редактирование и уведомления.
  *
  * Доделать:
- * 1) «Сменить пароль»: сейчас внешний колбэк, нужен диалог + метод в AuthRepository;
- * 2) аватар: в карточке иконка, при необходимости — фото из Storage;
- * 3) строки: вынести подписи в strings.xml.
+ * 1) аватар: в карточке иконка, при необходимости — фото из Storage;
+ * 2) строки: вынести подписи в strings.xml.
  *
  * Экраны уведомлений лежат в NotificationsScreen.kt / NotificationsViewModel.kt.
  * Общие элементы профиля — в ui/components (CoFlowLayouts.kt, CoFlowInputs.kt).
@@ -87,7 +85,6 @@ import com.example.coflow.ui.theme.coFlowTasksBackgroundBrush
 fun ProfileRoute(
     onNavigateToNotifications: () -> Unit,
     onNavigateToEditProfile: () -> Unit,
-    onChangePasswordClick: () -> Unit,
     onAccountDeleted: () -> Unit,
     onLoggedOut: () -> Unit,
     hasUnreadNotifications: Boolean = false,
@@ -97,6 +94,7 @@ fun ProfileRoute(
 
     var showDeleteDialog by remember { mutableStateOf(false) }
     var deletePassword by remember { mutableStateOf("") }
+    var showLogoutDialog by remember { mutableStateOf(false) }
 
     LaunchedEffect(state.isLoggedOut) {
         if (state.isLoggedOut) {
@@ -131,10 +129,40 @@ fun ProfileRoute(
         hasUnreadNotifications = hasUnreadNotifications,
         onEditProfileClick = onNavigateToEditProfile,
         onNotificationsClick = onNavigateToNotifications,
-        onLogoutClick = viewModel::logout,
-        onChangePasswordClick = onChangePasswordClick,
+        onLogoutClick = { showLogoutDialog = true },
         onDeleteAccountClick = { showDeleteDialog = true },
     )
+
+    // Подтверждение выхода из аккаунта
+    if (showLogoutDialog) {
+        AlertDialog(
+            onDismissRequest = { showLogoutDialog = false },
+            title = { Text(text = "Выйти из аккаунта?", color = CoFlowColors.TextPrimary) },
+            text = {
+                Text(
+                    text = "Данные профиля сохранятся. Для продолжения работы нужно будет войти снова.",
+                    fontSize = 13.sp,
+                    color = CoFlowColors.TextSecondary,
+                )
+            },
+            confirmButton = {
+                TextButton(
+                    onClick = {
+                        showLogoutDialog = false
+                        viewModel.logout()
+                    },
+                ) {
+                    Text(text = "Выйти", color = CoFlowColors.Blue)
+                }
+            },
+            dismissButton = {
+                TextButton(onClick = { showLogoutDialog = false }) {
+                    Text(text = "Отмена", color = CoFlowColors.TextSecondary)
+                }
+            },
+            containerColor = Color(0xFFF4F7FF),
+        )
+    }
 
     // Подтверждение удаления аккаунта
     if (showDeleteDialog) {
@@ -150,7 +178,9 @@ fun ProfileRoute(
             text = {
                 Column {
                     Text(
-                        text = "Профиль и участие в проектах будут удалены безвозвратно. Для подтверждения введите пароль.",
+                        text =
+                            "Профиль и участие в проектах будут удалены безвозвратно. " +
+                                "Это действие нельзя отменить. Для подтверждения введите пароль.",
                         fontSize = 13.sp,
                         color = CoFlowColors.TextSecondary,
                     )
@@ -205,7 +235,6 @@ fun ProfileScreen(
     onEditProfileClick: () -> Unit,
     onNotificationsClick: () -> Unit,
     onLogoutClick: () -> Unit,
-    onChangePasswordClick: () -> Unit,
     onDeleteAccountClick: () -> Unit,
     hasUnreadNotifications: Boolean = false,
 ) {
@@ -254,14 +283,6 @@ fun ProfileScreen(
                         title = "Выйти из аккаунта",
                         onClick = onLogoutClick,
                         trailing = { ProfileIconBadge(icon = Icons.AutoMirrored.Outlined.Logout) },
-                    )
-                    ProfileMenuDivider()
-                    // TODO(профиль): сейчас только колбэк в MainActivity (Toast).
-                    //  Нужен диалог ввода пароля + AuthRepository.changePassword().
-                    ProfileMenuRow(
-                        title = "Сменить пароль",
-                        onClick = onChangePasswordClick,
-                        trailing = { ProfileIconBadge(icon = Icons.Outlined.Lock) },
                     )
                 }
 
@@ -375,7 +396,6 @@ private fun ProfileScreenPreview() {
             onEditProfileClick = {},
             onNotificationsClick = {},
             onLogoutClick = {},
-            onChangePasswordClick = {},
             onDeleteAccountClick = {},
         )
     }

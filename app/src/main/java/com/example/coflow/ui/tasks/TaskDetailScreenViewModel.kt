@@ -34,6 +34,12 @@ enum class TaskStatusUi {
     DONE,
 }
 
+/** Отображаемый исполнитель задачи: имя либо пометка «Ты» для текущего пользователя. */
+data class AssigneeUi(
+    val name: String,
+    val isCurrentUser: Boolean = false,
+)
+
 data class TaskDetailUiState(
     val id: String = "",
     val title: String = "",
@@ -41,7 +47,7 @@ data class TaskDetailUiState(
     val projectName: String = "",
     val description: String = "",
     val author: String = "",
-    val assignees: List<String> = emptyList(),
+    val assignees: List<AssigneeUi> = emptyList(),
     val dueDateFormatted: String = "",
     val isOverdue: Boolean = false,
     val canEdit: Boolean = false,
@@ -74,6 +80,9 @@ class TaskDetailScreenViewModel(
 
     /** Последняя загруженная задача: нужна для уведомлений при смене статуса. */
     private var loadedTask: TaskModel? = null
+
+    /** Владелец проекта задачи: используется для правил назначения при взятии задачи. */
+    private var loadedProjectOwnerId: String = ""
 
     init {
         if (taskId.isNotBlank()) {
@@ -120,19 +129,18 @@ class TaskDetailScreenViewModel(
                                     ""
                                 }
 
-                            // ИСПРАВЛЕНИЕ: Разбиваем assigneeId по запятой (поддержка нескольких исполнителей)
-                            val assigneesList = mutableListOf<String>()
-                            if (task.assigneeId.isNotBlank()) {
-                                val assigneeIds =
-                                    task.assigneeId
-                                        .split(",")
-                                        .map { it.trim() }
-                                        .filter { it.isNotBlank() }
-                                for (id in assigneeIds) {
-                                    val assigneeUser = userRepository.getById(id).getOrNull()
-                                    if (assigneeUser != null) {
-                                        assigneesList.add(if (assigneeUser.uid == currentUid) "Ты" else assigneeUser.name)
-                                    }
+                            // Исполнители хранятся списком ID
+                            loadedProjectOwnerId = project?.ownerId.orEmpty()
+                            val assigneesList = mutableListOf<AssigneeUi>()
+                            for (id in task.assigneeId.filter { it.isNotBlank() }) {
+                                val assigneeUser = userRepository.getById(id).getOrNull()
+                                if (assigneeUser != null) {
+                                    assigneesList.add(
+                                        AssigneeUi(
+                                            name = assigneeUser.name,
+                                            isCurrentUser = assigneeUser.uid == currentUid,
+                                        ),
+                                    )
                                 }
                             }
 
@@ -140,11 +148,7 @@ class TaskDetailScreenViewModel(
                             val formattedDate = task.deadline.format(DateTimeFormatter.ofPattern("dd.MM.yy"))
 
                             val isAuthor = task.authorId == currentUid
-                            val isAssignee =
-                                task.assigneeId
-                                    .split(",")
-                                    .map { it.trim() }
-                                    .contains(currentUid)
+                            val isAssignee = task.assigneeId.contains(currentUid)
                             val isProjectOwner = project?.ownerId == currentUid && currentUid.isNotBlank()
                             val canModifyTask = isAuthor || isAssignee || isProjectOwner
 
@@ -211,10 +215,28 @@ class TaskDetailScreenViewModel(
         viewModelScope.launch {
             _state.update { it.copy(isLoading = true) }
 
+            // Правила назначения при взятии задачи в работу:
+            // - если берёт уже назначенный исполнитель — список не меняем;
+            // - если берёт автор задачи или владелец проекта (админ) —
+            //   список исполнителей заменяется на него одного.
+            val task = loadedTask
+            val assigneeUpdate: List<String>? =
+                if (newStatus == TaskStatus.IN_PROGRESS && task != null) {
+                    val isAssignee = task.assigneeId.contains(currentUid)
+                    val isAuthorOrOwner = task.authorId == currentUid || loadedProjectOwnerId == currentUid
+                    when {
+                        isAssignee -> null
+                        isAuthorOrOwner -> listOf(currentUid)
+                        else -> null
+                    }
+                } else {
+                    null
+                }
+
             val updateDto =
                 TaskUpdateDto(
                     status = newStatus,
-                    assigneeId = if (newStatus == TaskStatus.IN_PROGRESS) currentUid else null,
+                    assigneeId = assigneeUpdate,
                 )
 
             taskRepository.updateTask(taskId, updateDto).fold(

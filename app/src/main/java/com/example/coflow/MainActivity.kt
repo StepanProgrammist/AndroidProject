@@ -663,9 +663,6 @@ class MainActivity : ComponentActivity() {
                                                 )
                                             },
                                             hasUnreadNotifications = notificationsState.hasUnread,
-                                            onChangePasswordClick = {
-                                                notificationsHandler("Смена пароля пока недоступна")
-                                            },
                                             onAccountDeleted = {
                                                 notificationsHandler("Аккаунт удалён")
                                                 notificationsViewModel.reset()

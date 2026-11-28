@@ -8,7 +8,7 @@ import com.example.coflow.repositories.dto.UserUpdateDto
  * Пользователи (коллекция `users`).
  *
  * Единый стандарт изменения данных:
- * - [addUser] — создание пользователя;
+ * - [addUser] — создание или обновление пользователя по почте;
  * - [updateUser] — частичное обновление по UID;
  * - [deleteUser] — удаление.
  *
@@ -36,9 +36,10 @@ interface UserRepository {
     suspend fun getByEmail(email: String): Result<UserModel>
 
     /**
-     * Создаёт пользователя из [UserAddDto].
-     * UID генерирует репозиторий, поэтому в DTO его нет.
-     * Возвращает сохранённую модель с заполненным `uid`.
+     * Создаёт пользователя из [UserAddDto] или обновляет существующего
+     * с такой же почтой, поэтому повторный вызов не плодит дубли.
+     * UID генерирует репозиторий (или берётся у текущего Auth-пользователя),
+     * поэтому в DTO его нет. Возвращает сохранённую модель с заполненным `uid`.
      */
     suspend fun addUser(user: UserAddDto): Result<UserModel>
 

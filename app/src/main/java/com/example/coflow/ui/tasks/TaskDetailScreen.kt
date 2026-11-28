@@ -181,7 +181,12 @@ fun TaskDetailScreen(
                                         }
 
                                         state.assignees.size == 1 -> {
-                                            state.assignees.first()
+                                            val assignee = state.assignees.first()
+                                            if (assignee.isCurrentUser) {
+                                                stringResource(R.string.assignee_you)
+                                            } else {
+                                                assignee.name
+                                            }
                                         }
 
                                         else -> {
@@ -352,89 +357,5 @@ fun TaskDetailRoute(
                 onBottomActionClick = viewModel::onBottomActionClick,
             )
         }
-    }
-}
-
-@Preview(name = "В процессе (Просрочено)", showBackground = true, widthDp = 390, heightDp = 844)
-@Composable
-fun TaskDetailScreen_InProgressOverdue_Preview() {
-    CoFlowTheme {
-        TaskDetailScreen(
-            state =
-                TaskDetailUiState(
-                    id = "4",
-                    title = "Разработать новый онбординг для пользователей",
-                    status = TaskStatusUi.IN_PROGRESS,
-                    projectName = "Мобильное приложение",
-                    description = "Нужно сделать 3 экрана с анимацией и кнопкой пропуска.",
-                    author = "Алексей Смирнов",
-                    assignees = listOf("Мария Иванова", "Ты"),
-                    dueDateFormatted = "24.10.26",
-                    isOverdue = true, // Дата красная
-                    canEdit = false,
-                    showBottomAction = true,
-                    bottomActionTextResId = R.string.task_action_button_complete,
-                    isLoading = false, // Важно для превью!
-                ),
-            onBackClick = {},
-            onEditClick = {},
-            onBottomActionClick = {},
-        )
-    }
-}
-
-@Preview(name = "К исполнению (Можно редактировать)", showBackground = true, widthDp = 390, heightDp = 844)
-@Composable
-fun TaskDetailScreen_Todo_Preview() {
-    CoFlowTheme {
-        TaskDetailScreen(
-            state =
-                TaskDetailUiState(
-                    id = "1",
-                    title = "Обновить иконки в навигации",
-                    status = TaskStatusUi.TODO,
-                    projectName = "Дизайн-система",
-                    description = "", // Проверка пустого описания
-                    author = "Елена Козлова",
-                    assignees = emptyList(), // Проверка пустых исполнителей
-                    dueDateFormatted = "30.10.26",
-                    isOverdue = false,
-                    canEdit = true, // Покажет карандаш
-                    showBottomAction = true,
-                    bottomActionTextResId = R.string.task_action_button_take,
-                    isLoading = false,
-                ),
-            onBackClick = {},
-            onEditClick = {},
-            onBottomActionClick = {},
-        )
-    }
-}
-
-@Preview(name = "Сделано (Без нижней кнопки)", showBackground = true, widthDp = 390, heightDp = 844)
-@Composable
-private fun TaskDetailScreen_Done_Preview() {
-    CoFlowTheme {
-        TaskDetailScreen(
-            state =
-                TaskDetailUiState(
-                    id = "5",
-                    title = "Провести ревью кода модуля авторизации",
-                    status = TaskStatusUi.DONE,
-                    projectName = "Бэкенд",
-                    description = "Все замечания исправлены, код утвержден.",
-                    author = "Дмитрий Петров",
-                    assignees = listOf("Ты"),
-                    dueDateFormatted = "20.10.26",
-                    isOverdue = false,
-                    canEdit = false, // Карандаша нет
-                    showBottomAction = false, // Кнопки внизу нет
-                    bottomActionTextResId = null,
-                    isLoading = false,
-                ),
-            onBackClick = {},
-            onEditClick = {},
-            onBottomActionClick = {},
-        )
     }
 }

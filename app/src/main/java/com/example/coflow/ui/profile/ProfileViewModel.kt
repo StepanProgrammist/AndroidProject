@@ -21,8 +21,6 @@ import kotlinx.coroutines.launch
  *
  * Точка непрочитанных на колокольчике приходит параметром из MainActivity
  * (общий NotificationsViewModel), в этом состоянии её нет.
- *
- * TODO(профиль): «Сменить пароль» — метод changePassword в AuthRepository + диалог.
  */
 
 /**

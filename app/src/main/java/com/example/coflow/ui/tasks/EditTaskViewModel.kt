@@ -169,24 +169,13 @@ class EditTaskViewModel(
                                             ""
                                         }
 
-                                    // ИСПРАВЛЕНИЕ: Разбиваем assigneeId по запятой (поддержка нескольких исполнителей)
+                                    // Исполнители хранятся списком ID
                                     val assigneeNames = mutableListOf<String>()
-                                    val ids =
-                                        task.assigneeId
-                                            .split(",")
-                                            .map { it.trim() }
-                                            .filter { it.isNotBlank() }
-                                    if (task.assigneeId.isNotBlank()) {
-                                        val ids =
-                                            task.assigneeId
-                                                .split(",")
-                                                .map { it.trim() }
-                                                .filter { it.isNotBlank() }
-                                        for (id in ids) {
-                                            val user = userRepository.getById(id).getOrNull()
-                                            if (user != null) {
-                                                assigneeNames.add(if (user.uid == currentUid) "Ты" else user.name)
-                                            }
+                                    val ids = task.assigneeId.filter { it.isNotBlank() }
+                                    for (id in ids) {
+                                        val user = userRepository.getById(id).getOrNull()
+                                        if (user != null) {
+                                            assigneeNames.add(if (user.uid == currentUid) "Ты" else user.name)
                                         }
                                     }
 
@@ -470,7 +459,7 @@ class EditTaskViewModel(
                     title = current.title.trim(),
                     description = current.description.trim(),
                     // нужно дополнить для исполнителей, проекта и даты
-                    assigneeId = current.pendingAssigneeIds.joinToString(","),
+                    assigneeId = current.pendingAssigneeIds.toList(),
                     deadline = LocalDateTime.of(current.selectedDueDate, LocalTime.MIDNIGHT),
                     projectId = current.selectedProjectId.ifBlank { null },
                 )

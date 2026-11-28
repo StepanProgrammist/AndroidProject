@@ -231,7 +231,12 @@ class FirebaseNotificationRepositoryImpl(
                         .orderBy("createdAt", Query.Direction.DESCENDING)
                 }
 
-            val count = query.count().get(AggregateSource.SERVER).await().count
+            val count =
+                query
+                    .count()
+                    .get(AggregateSource.SERVER)
+                    .await()
+                    .count
             Result.success(count.toInt())
         } catch (e: CancellationException) {
             throw e

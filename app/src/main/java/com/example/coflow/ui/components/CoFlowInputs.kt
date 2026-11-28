@@ -233,6 +233,7 @@ fun ProfileTextField(
     modifier: Modifier = Modifier,
     isError: Boolean = false,
     supportingText: String? = null,
+    enabled: Boolean = true,
     keyboardOptions: KeyboardOptions = KeyboardOptions.Default,
     visualTransformation: VisualTransformation = VisualTransformation.None,
 ) {
@@ -242,12 +243,13 @@ fun ProfileTextField(
             modifier = Modifier.padding(start = 12.dp, bottom = 4.dp),
             fontSize = 11.sp,
             fontWeight = FontWeight.SemiBold,
-            color = CoFlowColors.TextPrimary,
+            color = if (enabled) CoFlowColors.TextPrimary else CoFlowColors.TextSecondary,
         )
 
         BasicTextField(
             value = value,
             onValueChange = onValueChange,
+            enabled = enabled,
             modifier =
                 Modifier
                     .fillMaxWidth()
@@ -271,8 +273,13 @@ fun ProfileTextField(
                         color = if (isError) CoFlowColors.Error else CoFlowGlassStyles.BlueBorder,
                         shape = CoFlowShapes.Input,
                     ),
-            textStyle = TextStyle(color = CoFlowColors.TextPrimary, fontSize = 14.sp, lineHeight = 20.sp),
-            cursorBrush = SolidColor(CoFlowColors.Blue),
+            textStyle =
+                TextStyle(
+                    color = if (enabled) CoFlowColors.TextPrimary else CoFlowColors.TextSecondary,
+                    fontSize = 14.sp,
+                    lineHeight = 20.sp,
+                ),
+            cursorBrush = if (enabled) SolidColor(CoFlowColors.Blue) else SolidColor(Color.Transparent),
             singleLine = true,
             keyboardOptions = keyboardOptions,
             visualTransformation = visualTransformation,
@@ -289,7 +296,7 @@ fun ProfileTextField(
                         imageVector = leadingIcon,
                         contentDescription = null,
                         modifier = Modifier.size(21.dp),
-                        tint = CoFlowColors.TextSecondary,
+                        tint = if (enabled) CoFlowColors.TextSecondary else CoFlowColors.TextSecondary.copy(alpha = 0.5f),
                     )
                     Spacer(Modifier.width(10.dp))
                     Box(modifier = Modifier.weight(1f), contentAlignment = Alignment.CenterStart) {
@@ -307,7 +314,7 @@ fun ProfileTextField(
                 text = supportingText,
                 modifier = Modifier.padding(start = 12.dp, top = 4.dp),
                 fontSize = 11.sp,
-                color = CoFlowColors.Error,
+                color = if (enabled) CoFlowColors.Error else CoFlowColors.TextSecondary,
             )
         }
     }

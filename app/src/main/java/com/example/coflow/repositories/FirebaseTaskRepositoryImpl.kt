@@ -6,6 +6,7 @@ import com.example.coflow.repositories.dto.TaskAddDto
 import com.example.coflow.repositories.dto.TaskUpdateDto
 import com.google.firebase.Timestamp
 import com.google.firebase.firestore.CollectionReference
+import com.google.firebase.firestore.DocumentReference
 import com.google.firebase.firestore.DocumentSnapshot
 import com.google.firebase.firestore.FieldValue
 import com.google.firebase.firestore.FirebaseFirestore
@@ -20,8 +21,8 @@ import java.time.ZoneOffset
 /**
  * Firestore-реализация задач.
  *
- * Коллекция `tasks`; `projectId`, `authorId` и `assigneeId` хранятся как
- * DocumentReference, `deadline` — Timestamp, `status` — Int.
+ * Коллекция `tasks`; `projectId` и `authorId` хранятся как DocumentReference,
+ * `assigneeId` — массив DocumentReference, `deadline` — Timestamp, `status` — Int.
  * addTask() принимает TaskAddDto и генерирует ID документа,
  * updateTask() принимает id и TaskUpdateDto.
  */
@@ -108,25 +109,26 @@ class FirebaseTaskRepositoryImpl(
      */
     override fun observeById(id: String): Flow<Result<TaskModel>> =
         callbackFlow {
-            val registration = taskCollection
-                .document(id)
-                .addSnapshotListener { snapshot, error ->
-                    if (error != null) {
-                        trySend(
-                            Result.failure(
-                                Exception(error.message ?: "Ошибка наблюдения за задачей"),
-                            ),
-                        )
-                        close()
-                    } else {
-                        val task = snapshot?.let { fromDocument(it) }
-                        if (task == null) {
-                            trySend(Result.failure(Exception("Задача не найдена")))
+            val registration =
+                taskCollection
+                    .document(id)
+                    .addSnapshotListener { snapshot, error ->
+                        if (error != null) {
+                            trySend(
+                                Result.failure(
+                                    Exception(error.message ?: "Ошибка наблюдения за задачей"),
+                                ),
+                            )
+                            close()
                         } else {
-                            trySend(Result.success(task))
+                            val task = snapshot?.let { fromDocument(it) }
+                            if (task == null) {
+                                trySend(Result.failure(Exception("Задача не найдена")))
+                            } else {
+                                trySend(Result.success(task))
+                            }
                         }
                     }
-                }
             awaitClose { registration.remove() }
         }
 
@@ -196,7 +198,7 @@ class FirebaseTaskRepositoryImpl(
             put("deadline", deadline.toTimestamp())
             if (projectId.isNotBlank()) put("projectId", projectCollection.document(projectId))
             if (authorId.isNotBlank()) put("authorId", userCollection.document(authorId))
-            if (assigneeId.isNotBlank()) put("assigneeId", userCollection.document(assigneeId))
+            if (assigneeId.isNotEmpty()) put("assigneeId", assigneeId.map { userCollection.document(it) })
         }
 
     /** null в DTO означает «не менять», пустая строка ID — удалить ссылку. */
@@ -208,7 +210,12 @@ class FirebaseTaskRepositoryImpl(
             deadline?.let { put("deadline", it.toTimestamp()) }
             projectId?.let { put("projectId", it.toReference(projectCollection)) }
             authorId?.let { put("authorId", it.toReference(userCollection)) }
-            assigneeId?.let { put("assigneeId", it.toReference(userCollection)) }
+            assigneeId?.let { ids ->
+                put(
+                    "assigneeId",
+                    if (ids.isEmpty()) FieldValue.delete() else ids.map { userCollection.document(it) },
+                )
+            }
         }
 
     private fun String.toReference(collection: CollectionReference): Any =
@@ -223,7 +230,7 @@ class FirebaseTaskRepositoryImpl(
             if (!doc.exists()) return null
 
             val deadline =
-                doc.getTimestamp("deadline")?.let {
+                (doc.get("deadline") as? Timestamp)?.let {
                     LocalDateTime.ofInstant(
                         Instant.ofEpochSecond(it.seconds, it.nanoseconds.toLong()),
                         ZoneOffset.UTC,
@@ -232,15 +239,52 @@ class FirebaseTaskRepositoryImpl(
 
             return TaskModel(
                 id = doc.id,
-                projectId = doc.getDocumentReference("projectId")?.id.orEmpty(),
-                authorId = doc.getDocumentReference("authorId")?.id.orEmpty(),
-                assigneeId = doc.getDocumentReference("assigneeId")?.id.orEmpty(),
-                title = doc.getString("title").orEmpty(),
-                description = doc.getString("description").orEmpty(),
+                projectId = doc.get("projectId").toRefId(),
+                authorId = doc.get("authorId").toRefId(),
+                assigneeId = doc.get("assigneeId").toRefIds(),
+                title = (doc.get("title") as? String).orEmpty(),
+                description = (doc.get("description") as? String).orEmpty(),
                 deadline = deadline,
-                status = TaskStatus.fromInt((doc.getLong("status") ?: 0L).toInt()),
+                status = TaskStatus.fromInt((doc.get("status") as? Number)?.toInt() ?: 0),
             )
         }
+
+        /** ID одиночной ссылки: понимает и `DocumentReference`, и строковый ID. */
+        private fun Any?.toRefId(): String =
+            when (this) {
+                is DocumentReference -> id
+                is String -> trim()
+                else -> ""
+            }
+
+        /**
+         * Список ID исполнителей. Понимает все встречающиеся форматы хранения:
+         * массив ссылок/строк, одиночную ссылку, строку с ID через запятую.
+         */
+        private fun Any?.toRefIds(): List<String> =
+            when (this) {
+                null -> {
+                    emptyList()
+                }
+
+                is List<*> -> {
+                    mapNotNull { it.toRefId().ifBlank { null } }
+                }
+
+                is DocumentReference -> {
+                    listOf(id)
+                }
+
+                is String -> {
+                    split(",")
+                        .map { it.trim() }
+                        .filter { it.isNotBlank() }
+                }
+
+                else -> {
+                    emptyList()
+                }
+            }
     }
 }
 

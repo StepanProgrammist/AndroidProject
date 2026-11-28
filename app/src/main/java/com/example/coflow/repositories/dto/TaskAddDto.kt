@@ -14,7 +14,7 @@ data class TaskAddDto(
     val description: String = "",
     val projectId: String = "",
     val authorId: String = "",
-    val assigneeId: String = "",
+    val assigneeId: List<String> = emptyList(),
     val deadline: LocalDateTime = LocalDateTime.now(),
     val status: TaskStatus = TaskStatus.TODO,
 )
