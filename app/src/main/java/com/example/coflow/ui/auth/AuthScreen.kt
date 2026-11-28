@@ -1,7 +1,17 @@
 package com.example.coflow.ui.auth
 
 import androidx.compose.foundation.background
-import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.imePadding
+import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.relocation.BringIntoViewRequester
+import androidx.compose.foundation.relocation.bringIntoViewRequester
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.MaterialTheme
@@ -10,8 +20,11 @@ import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.focus.onFocusChanged
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.PasswordVisualTransformation
@@ -21,8 +34,14 @@ import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.example.coflow.R
-import com.example.coflow.ui.components.*
-import com.example.coflow.ui.theme.*
+import com.example.coflow.ui.components.CoFlowAuthCard
+import com.example.coflow.ui.components.CoFlowAuthTextField
+import com.example.coflow.ui.components.CoFlowPrimaryButton
+import com.example.coflow.ui.theme.CoFlowColors
+import com.example.coflow.ui.theme.CoFlowSpacing
+import com.example.coflow.ui.theme.CoFlowTheme
+import com.example.coflow.ui.theme.coFlowTasksBackgroundBrush
+import kotlinx.coroutines.launch
 
 @Composable
 fun AuthScreen(
@@ -34,16 +53,31 @@ fun AuthScreen(
     onToggleMode: () -> Unit,
     onSubmit: () -> Unit,
 ) {
+    val scrollState = rememberScrollState()
+    val coroutineScope = rememberCoroutineScope()
+
+    val usernameRequester = remember { BringIntoViewRequester() }
+    val contactRequester = remember { BringIntoViewRequester() }
+    val passwordRequester = remember { BringIntoViewRequester() }
+    val confirmPasswordRequester = remember { BringIntoViewRequester() }
+
     Box(
-        modifier = Modifier.fillMaxSize().background(coFlowBackgroundBrush()),
+        modifier =
+            Modifier
+                .fillMaxSize()
+                .background(coFlowTasksBackgroundBrush()),
         contentAlignment = Alignment.Center,
     ) {
         Column(
             modifier =
                 Modifier
                     .fillMaxSize()
-                    .verticalScroll(rememberScrollState())
-                    .padding(horizontal = CoFlowSpacing.ScreenHorizontal, vertical = CoFlowSpacing.Medium),
+                    .imePadding()
+                    .verticalScroll(scrollState)
+                    .padding(
+                        horizontal = CoFlowSpacing.ScreenHorizontal,
+                        vertical = CoFlowSpacing.Medium,
+                    ),
             horizontalAlignment = Alignment.CenterHorizontally,
             verticalArrangement = Arrangement.Center,
         ) {
@@ -63,9 +97,7 @@ fun AuthScreen(
                     modifier = Modifier.fillMaxWidth(),
                     text =
                         stringResource(
-                            if (state.mode ==
-                                AuthMode.LOGIN
-                            ) {
+                            if (state.mode == AuthMode.LOGIN) {
                                 R.string.auth_subtitle_login
                             } else {
                                 R.string.auth_subtitle_register
@@ -80,54 +112,115 @@ fun AuthScreen(
 
                 if (state.mode == AuthMode.REGISTER) {
                     CoFlowAuthTextField(
+                        modifier =
+                            Modifier
+                                .bringIntoViewRequester(usernameRequester)
+                                .onFocusChanged {
+                                    if (it.isFocused) {
+                                        coroutineScope.launch {
+                                            usernameRequester.bringIntoView()
+                                        }
+                                    }
+                                },
                         value = state.username,
                         onValueChange = onUsernameChange,
                         label = stringResource(R.string.auth_label_username),
                         placeholder = stringResource(R.string.auth_placeholder_username),
                         isError = state.usernameError != null,
-                        supportingText = state.usernameError?.let { { Text(stringResource(it)) } },
+                        supportingText =
+                            state.usernameError?.let {
+                                { Text(stringResource(it)) }
+                            },
                     )
+
                     Spacer(modifier = Modifier.height(CoFlowSpacing.FieldGap))
                 }
 
                 CoFlowAuthTextField(
+                    modifier =
+                        Modifier
+                            .bringIntoViewRequester(contactRequester)
+                            .onFocusChanged {
+                                if (it.isFocused) {
+                                    coroutineScope.launch {
+                                        contactRequester.bringIntoView()
+                                    }
+                                }
+                            },
                     value = state.contact,
                     onValueChange = onContactChange,
                     label = stringResource(R.string.auth_label_contact),
                     placeholder = stringResource(R.string.auth_placeholder_contact),
                     isError = state.contactError != null,
-                    supportingText = state.contactError?.let { { Text(stringResource(it)) } },
+                    supportingText =
+                        state.contactError?.let {
+                            { Text(stringResource(it)) }
+                        },
                 )
 
                 Spacer(modifier = Modifier.height(CoFlowSpacing.FieldGap))
 
                 CoFlowAuthTextField(
+                    modifier =
+                        Modifier
+                            .bringIntoViewRequester(passwordRequester)
+                            .onFocusChanged {
+                                if (it.isFocused) {
+                                    coroutineScope.launch {
+                                        passwordRequester.bringIntoView()
+                                    }
+                                }
+                            },
                     value = state.password,
                     onValueChange = onPasswordChange,
                     label = stringResource(R.string.auth_label_password),
                     placeholder = stringResource(R.string.auth_placeholder_password),
                     visualTransformation = PasswordVisualTransformation(),
                     isError = state.passwordError != null,
-                    supportingText = state.passwordError?.let { { Text(stringResource(it)) } },
+                    supportingText =
+                        state.passwordError?.let {
+                            { Text(stringResource(it)) }
+                        },
                 )
 
                 if (state.mode == AuthMode.REGISTER) {
                     Spacer(modifier = Modifier.height(CoFlowSpacing.FieldGap))
+
                     CoFlowAuthTextField(
+                        modifier =
+                            Modifier
+                                .bringIntoViewRequester(confirmPasswordRequester)
+                                .onFocusChanged {
+                                    if (it.isFocused) {
+                                        coroutineScope.launch {
+                                            confirmPasswordRequester.bringIntoView()
+                                        }
+                                    }
+                                },
                         value = state.confirmPassword,
                         onValueChange = onConfirmChange,
                         label = stringResource(R.string.auth_label_confirm_password),
                         placeholder = stringResource(R.string.auth_placeholder_confirm_password),
                         visualTransformation = PasswordVisualTransformation(),
                         isError = state.confirmError != null,
-                        supportingText = state.confirmError?.let { { Text(stringResource(it)) } },
+                        supportingText =
+                            state.confirmError?.let {
+                                { Text(stringResource(it)) }
+                            },
                     )
                 }
 
                 Spacer(modifier = Modifier.height(CoFlowSpacing.Medium))
 
                 CoFlowPrimaryButton(
-                    text = stringResource(if (state.mode == AuthMode.LOGIN) R.string.auth_button_login else R.string.auth_button_register),
+                    text =
+                        stringResource(
+                            if (state.mode == AuthMode.LOGIN) {
+                                R.string.auth_button_login
+                            } else {
+                                R.string.auth_button_register
+                            },
+                        ),
                     onClick = onSubmit,
                     enabled = !state.isSubmitting,
                     height = 48.dp,
@@ -135,6 +228,7 @@ fun AuthScreen(
 
                 if (state.errorMessage != null) {
                     Spacer(modifier = Modifier.height(CoFlowSpacing.Small))
+
                     Text(
                         text = state.errorMessage!!,
                         modifier = Modifier.fillMaxWidth(),
@@ -151,9 +245,7 @@ fun AuthScreen(
                         modifier = Modifier.fillMaxWidth(),
                         text =
                             stringResource(
-                                if (state.mode ==
-                                    AuthMode.LOGIN
-                                ) {
+                                if (state.mode == AuthMode.LOGIN) {
                                     R.string.auth_toggle_to_register
                                 } else {
                                     R.string.auth_toggle_to_login

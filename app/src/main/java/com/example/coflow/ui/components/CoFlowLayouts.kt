@@ -38,6 +38,7 @@ import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
@@ -81,9 +82,12 @@ fun CoFlowScreenHeader(
             Column {
                 Text(
                     text = title,
-                    fontSize = 26.sp,
+                    fontSize = 24.sp,
                     fontWeight = FontWeight.Bold,
                     color = CoFlowColors.TextPrimary,
+                    maxLines = 1,
+                    overflow = TextOverflow.Ellipsis,
+                    modifier = Modifier.widthIn(max = 220.dp),
                 )
                 if (subtitle != null) {
                     Spacer(Modifier.height(3.dp))
