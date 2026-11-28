@@ -28,6 +28,9 @@ import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.DropdownMenu
 import androidx.compose.material3.Text
+import androidx.compose.material3.pulltorefresh.PullToRefreshBox
+import androidx.compose.material3.pulltorefresh.PullToRefreshDefaults
+import androidx.compose.material3.pulltorefresh.rememberPullToRefreshState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
@@ -88,6 +91,7 @@ fun ProjectsRoute(
         onNavigateToTasks = onNavigateToTasks,
         onNavigateToProjectTasks = onNavigateToProjectTasks,
         onNavigateToNotifications = onNavigateToNotifications,
+        onRefresh = viewModel::onPullToRefresh,
         hasUnreadNotifications = hasUnreadNotifications,
     )
 }
@@ -103,6 +107,7 @@ fun ProjectsScreen(
     onNavigateToTasks: () -> Unit,
     onNavigateToProjectTasks: (String) -> Unit,
     onNavigateToNotifications: () -> Unit,
+    onRefresh: () -> Unit = {},
     hasUnreadNotifications: Boolean = false,
 ) {
     // Стейт для скролла и скрытия нижней панели
@@ -139,29 +144,47 @@ fun ProjectsScreen(
         Spacer(Modifier.height(4.dp))
 
         // Список проектов (занимает всё свободное место)
-        LazyColumn(
-            state = listState,
+        val pullToRefreshState = rememberPullToRefreshState()
+
+        PullToRefreshBox(
+            isRefreshing = state.isRefreshing,
+            onRefresh = onRefresh,
+            state = pullToRefreshState,
             modifier = Modifier.weight(1f).padding(bottom = 8.dp),
-            verticalArrangement = Arrangement.spacedBy(10.dp),
-            contentPadding = PaddingValues(bottom = 16.dp),
+            indicator = {
+                PullToRefreshDefaults.Indicator(
+                    state = pullToRefreshState,
+                    isRefreshing = state.isRefreshing,
+                    modifier = Modifier.align(Alignment.TopCenter),
+                    containerColor = CoFlowColors.White,
+                    color = CoFlowColors.Blue,
+                )
+            },
         ) {
-            if (state.projects.isEmpty()) {
-                // Показываем текст, если ничего не найдено
-                item {
-                    Text(
-                        text = stringResource(R.string.project_empty_state),
-                        modifier = Modifier.fillMaxWidth().padding(top = 32.dp),
-                        color = CoFlowColors.TextSecondary,
-                        fontSize = 14.sp,
-                        textAlign = TextAlign.Center,
-                    )
-                }
-            } else {
-                items(state.projects, key = { it.id }) { project ->
-                    ProjectCard(
-                        project = project,
-                        onClick = { onNavigateToProjectTasks(project.id) },
-                    )
+            LazyColumn(
+                state = listState,
+                modifier = Modifier.fillMaxSize(),
+                verticalArrangement = Arrangement.spacedBy(10.dp),
+                contentPadding = PaddingValues(bottom = 16.dp),
+            ) {
+                if (state.projects.isEmpty()) {
+                    // Показываем текст, если ничего не найдено
+                    item {
+                        Text(
+                            text = stringResource(R.string.project_empty_state),
+                            modifier = Modifier.fillMaxWidth().padding(top = 32.dp),
+                            color = CoFlowColors.TextSecondary,
+                            fontSize = 14.sp,
+                            textAlign = TextAlign.Center,
+                        )
+                    }
+                } else {
+                    items(state.projects, key = { it.id }) { project ->
+                        ProjectCard(
+                            project = project,
+                            onClick = { onNavigateToProjectTasks(project.id) },
+                        )
+                    }
                 }
             }
         }

@@ -10,11 +10,13 @@ import com.example.coflow.repositories.FirebaseAuthRepositoryImpl
 import com.example.coflow.repositories.FirebaseProjectRepositoryImpl
 import com.example.coflow.repositories.ProjectRepository
 import kotlinx.coroutines.Job
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
+import kotlin.time.Duration.Companion.seconds
 
 enum class ProjectRole { OWNER, READER }
 
@@ -41,6 +43,7 @@ data class ProjectsUiState(
     val isFilterMenuExpanded: Boolean = false,
     val projects: List<ProjectUiItem> = emptyList(),
     val activeCount: Int = 0,
+    val isRefreshing: Boolean = false,
 )
 
 class ProjectsViewModel(
@@ -50,6 +53,7 @@ class ProjectsViewModel(
     // Полный список активных проектов пользователя; фильтрация и поиск применяются к копии.
     private var allProjects: List<ProjectUiItem> = emptyList()
     private var observationJob: Job? = null
+    private var refreshTimeoutJob: Job? = null
 
     private val _state = MutableStateFlow(ProjectsUiState())
     val state: StateFlow<ProjectsUiState> = _state.asStateFlow()
@@ -71,6 +75,7 @@ class ProjectsViewModel(
                 if (uid.isNullOrBlank()) {
                     allProjects = emptyList()
                     updateFilteredProjects()
+                    finishRefresh()
                     return@launch
                 }
 
@@ -81,14 +86,45 @@ class ProjectsViewModel(
                             onSuccess = { projects ->
                                 allProjects = projects.map { it.toUiItem(currentUid = uid) }
                                 updateFilteredProjects()
+                                finishRefresh()
                             },
                             onFailure = { _ ->
                                 // В ProjectsUiState пока нет поля для ошибки.
                                 // При сбое оставляем последний успешно загруженный список.
+                                finishRefresh()
                             },
                         )
                     }
             }
+    }
+
+    /**
+     * Свайп вниз по списку.
+     *
+     * Переподписываемся на поток проектов: это заставляет Firestore перечитать
+     * данные с сервера, а не отдать то, что уже есть в локальном кэше.
+     */
+    fun onPullToRefresh() {
+        if (_state.value.isRefreshing) return
+
+        _state.update { it.copy(isRefreshing = true) }
+        refresh()
+
+        // Страховка: если сервер молчит (нет сети и пустой кэш), индикатор
+        // не должен крутиться вечно.
+        refreshTimeoutJob?.cancel()
+        refreshTimeoutJob =
+            viewModelScope.launch {
+                delay(REFRESH_TIMEOUT)
+                _state.update { it.copy(isRefreshing = false) }
+            }
+    }
+
+    private fun finishRefresh() {
+        refreshTimeoutJob?.cancel()
+        if (_state.value.isRefreshing) {
+            _state.update { it.copy(isRefreshing = false) }
+        }
     }
 
     // Ввод текста в поиск
@@ -133,6 +169,11 @@ class ProjectsViewModel(
                 activeCount = allProjects.size,
             )
         }
+    }
+
+    private companion object {
+        /** Сколько ждём ответ сервера, прежде чем спрятать индикатор обновления. */
+        val REFRESH_TIMEOUT = 8.seconds
     }
 }
 

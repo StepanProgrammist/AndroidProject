@@ -35,6 +35,9 @@ import androidx.compose.material3.SnackbarHost
 import androidx.compose.material3.SnackbarHostState
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
+import androidx.compose.material3.pulltorefresh.PullToRefreshBox
+import androidx.compose.material3.pulltorefresh.PullToRefreshDefaults
+import androidx.compose.material3.pulltorefresh.rememberPullToRefreshState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableFloatStateOf
@@ -88,6 +91,7 @@ fun TasksScreen(
     onNavigateToNotifications: () -> Unit,
     onClearError: () -> Unit,
     onTaskSwipe: (TaskRowUi) -> Unit,
+    onRefresh: () -> Unit = {},
     hasUnreadNotifications: Boolean = false,
 ) {
     var pendingTask by remember { mutableStateOf<TaskRowUi?>(null) }
@@ -174,34 +178,56 @@ fun TasksScreen(
 
             Spacer(Modifier.height(16.dp))
 
-            if (state.isLoading) {
-                Box(
-                    modifier = Modifier.weight(1f).fillMaxWidth(),
-                    contentAlignment = Alignment.Center,
-                ) {
-                    CircularProgressIndicator(color = CoFlowColors.Blue)
-                }
-            } else {
-                Column(
-                    modifier =
-                        Modifier
-                            .weight(1f)
-                            .padding(bottom = 8.dp)
-                            .clipToBounds()
-                            .verticalScroll(scrollState),
-                    verticalArrangement = Arrangement.spacedBy(10.dp),
-                ) {
-                    state.groups.forEach { group ->
-                        TaskGroupCard(
-                            group = group,
-                            onToggle = { onToggleGroup(group.id) },
-                            onTaskClick = { task -> onNavigateToTaskDetail(task.id) },
-                            onTaskSwipe = { task ->
-                                pendingTask = task
-                            },
-                        )
+            val pullToRefreshState = rememberPullToRefreshState()
+
+            PullToRefreshBox(
+                isRefreshing = state.isRefreshing,
+                onRefresh = onRefresh,
+                state = pullToRefreshState,
+                modifier =
+                    Modifier
+                        .weight(1f)
+                        .fillMaxWidth()
+                        .padding(bottom = 8.dp),
+                indicator = {
+                    PullToRefreshDefaults.Indicator(
+                        state = pullToRefreshState,
+                        isRefreshing = state.isRefreshing,
+                        modifier = Modifier.align(Alignment.TopCenter),
+                        containerColor = CoFlowColors.White,
+                        color = CoFlowColors.Blue,
+                    )
+                },
+            ) {
+                if (state.isLoading) {
+                    Box(
+                        modifier = Modifier.fillMaxSize(),
+                        contentAlignment = Alignment.Center,
+                    ) {
+                        CircularProgressIndicator(color = CoFlowColors.Blue)
                     }
-                    Spacer(Modifier.height(18.dp))
+                } else {
+                    // Список групп: тянем вниз — обновляем данные
+                    Column(
+                        modifier =
+                            Modifier
+                                .fillMaxSize()
+                                .clipToBounds()
+                                .verticalScroll(scrollState),
+                        verticalArrangement = Arrangement.spacedBy(10.dp),
+                    ) {
+                        state.groups.forEach { group ->
+                            TaskGroupCard(
+                                group = group,
+                                onToggle = { onToggleGroup(group.id) },
+                                onTaskClick = { task -> onNavigateToTaskDetail(task.id) },
+                                onTaskSwipe = { task ->
+                                    pendingTask = task
+                                },
+                            )
+                        }
+                        Spacer(Modifier.height(18.dp))
+                    }
                 }
             }
 
@@ -903,6 +929,7 @@ fun TasksRoute(
         onNavigateToNotifications = onNavigateToNotifications,
         onClearError = viewModel::clearError,
         onTaskSwipe = viewModel::onTaskSwipe,
+        onRefresh = viewModel::refresh,
         hasUnreadNotifications = hasUnreadNotifications,
     )
 }

@@ -194,7 +194,10 @@ class NotificationsViewModel(
                 val newest =
                     maxOf(
                         items.firstOrNull()?.createdAt ?: Instant.MIN,
-                        fresh.notifications.firstOrNull()?.createdAt?.toInstant(ZoneOffset.UTC) ?: Instant.MIN,
+                        fresh.notifications
+                            .firstOrNull()
+                            ?.createdAt
+                            ?.toInstant(ZoneOffset.UTC) ?: Instant.MIN,
                     )
                 val hasNew =
                     markKnown &&
@@ -289,7 +292,10 @@ class NotificationsViewModel(
     fun markAllAsRead() {
         val userId = currentUserId() ?: return
 
-        val newest = _state.value.notifications.firstOrNull()?.createdAt
+        val newest =
+            _state.value.notifications
+                .firstOrNull()
+                ?.createdAt
         readAt = maxOf(Instant.now(), newest ?: Instant.now())
         readAtKnown = true
 
@@ -329,8 +335,7 @@ class NotificationsViewModel(
             }
     }
 
-    private fun currentUserId(): String? =
-        authRepository.getCurrentUserUid()?.takeIf { it.isNotBlank() }
+    private fun currentUserId(): String? = authRepository.getCurrentUserUid()?.takeIf { it.isNotBlank() }
 
     private companion object {
         const val TAG = "NotificationsViewModel"

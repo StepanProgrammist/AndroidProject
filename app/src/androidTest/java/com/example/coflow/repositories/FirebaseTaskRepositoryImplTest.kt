@@ -41,7 +41,7 @@ class FirebaseTaskRepositoryImplTest {
                     description = "Описание задачи для интеграционного теста",
                     projectId = projectId,
                     authorId = "test_author",
-                    assigneeId = "test_assignee",
+                    assigneeId = listOf("test_assignee"),
                     deadline = deadline,
                     status = TaskStatus.IN_PROGRESS,
                 )
@@ -52,7 +52,7 @@ class FirebaseTaskRepositoryImplTest {
                 assertEquals(title, created.title)
                 assertEquals(projectId, created.projectId)
                 assertEquals("test_author", created.authorId)
-                assertEquals("test_assignee", created.assigneeId)
+                assertEquals(listOf("test_assignee"), created.assigneeId)
                 assertEquals(deadline, created.deadline)
                 assertEquals(TaskStatus.IN_PROGRESS, created.status)
 
@@ -91,7 +91,7 @@ class FirebaseTaskRepositoryImplTest {
                 assertEquals(newTitle, updated.title)
                 assertEquals(newDeadline, updated.deadline)
                 assertEquals(TaskStatus.DONE, updated.status)
-                assertEquals("test_assignee", updated.assigneeId)
+                assertEquals(listOf("test_assignee"), updated.assigneeId)
 
                 val reloaded = repository.getById(created.id).getOrThrow()
                 assertEquals(newTitle, reloaded.title)
