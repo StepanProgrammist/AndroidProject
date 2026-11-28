@@ -34,7 +34,7 @@ data class ProjectTaskRowUi(
     val title: String,
     val projectName: String,
     val authorId: String,
-    val assigneeId: String,
+    val assigneeId: List<String>,
     val dueDateFormatted: String,
     val status: TaskStatus,
     val isDone: Boolean,
@@ -111,7 +111,7 @@ class ProjectTasksViewModel(
                                         isDone = task.status == TaskStatus.DONE,
                                         isOverdue =
                                             task.deadline.isBefore(LocalDateTime.now(ZoneOffset.UTC)) && task.status != TaskStatus.DONE,
-                                        isMine = task.authorId == currentUid || task.assigneeId == currentUid,
+                                        isMine = task.authorId == currentUid || task.assigneeId.contains(currentUid),
                                     )
                                 }
 

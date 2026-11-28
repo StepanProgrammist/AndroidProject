@@ -409,7 +409,7 @@ class CreateTaskViewModel(
 
         viewModelScope.launch {
             val authorId = authRepository.getCurrentUserUid().orEmpty()
-            val assigneeId = current.assignees.joinToString(",") { it.id }
+            val assigneeIds = current.assignees.map { it.id }
             val projectId = current.selectedProjectId
 
             val deadlineDateTime =
@@ -425,7 +425,7 @@ class CreateTaskViewModel(
                     description = current.description.trim(),
                     projectId = projectId,
                     authorId = authorId,
-                    assigneeId = assigneeId,
+                    assigneeId = assigneeIds,
                     deadline = deadlineDateTime,
                     status = TaskStatus.TODO,
                 )

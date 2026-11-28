@@ -44,7 +44,7 @@ data class TaskRowUi(
     val projectName: String,
     val projectOwnerId: String = "",
     val authorId: String,
-    val assigneeId: String,
+    val assigneeId: List<String>,
     val dueDateFormatted: String,
     val status: TaskStatus,
     val isDone: Boolean,
@@ -192,11 +192,7 @@ class TasksScreenViewModel(
                         val taskRows =
                             allFetchedTasks.map { task ->
                                 val isAuthor = task.authorId == uid
-                                val isAssignee =
-                                    task.assigneeId
-                                        .split(",")
-                                        .map { it.trim() }
-                                        .contains(uid)
+                                val isAssignee = task.assigneeId.contains(uid)
                                 val projectOwnerId = projectMap[task.projectId]?.ownerId.orEmpty()
                                 val isProjectOwner = projectOwnerId == uid && uid.isNotBlank()
 
@@ -305,10 +301,27 @@ class TasksScreenViewModel(
         viewModelScope.launch {
             try {
                 _uiState.update { it.copy(isLoading = true) }
+                // Правила назначения при взятии задачи в работу:
+                // - если берёт уже назначенный исполнитель — список не меняем;
+                // - если берёт автор задачи или владелец проекта (админ) —
+                //   список исполнителей заменяется на него одного.
+                val assigneeUpdate: List<String>? =
+                    if (newStatus == TaskStatus.IN_PROGRESS) {
+                        val isAssignee = task.assigneeId.contains(uid)
+                        val isAuthorOrOwner = task.authorId == uid || (task.projectOwnerId == uid && uid.isNotBlank())
+                        when {
+                            isAssignee -> null
+                            isAuthorOrOwner -> listOf(uid)
+                            else -> null
+                        }
+                    } else {
+                        null
+                    }
+
                 val updateDto =
                     TaskUpdateDto(
                         status = newStatus,
-                        assigneeId = if (newStatus == TaskStatus.IN_PROGRESS) uid else null,
+                        assigneeId = assigneeUpdate,
                     )
                 taskRepository.updateTask(task.id, updateDto).fold(
                     onSuccess = {
@@ -356,11 +369,7 @@ class TasksScreenViewModel(
             if (state.selectedFilters.contains("MINE") && uid != null) {
                 filtered =
                     filtered.filter {
-                        it.authorId == uid ||
-                            it.assigneeId
-                                .split(",")
-                                .map { s -> s.trim() }
-                                .contains(uid)
+                        it.authorId == uid || it.assigneeId.contains(uid)
                     }
             }
 
