@@ -242,15 +242,15 @@ fun EditTaskRoute(
             confirmButton = {
                 TextButton(
                     onClick = {
-                        viewModel.confirmDelete { taskId ->
-                            Toast
-                                .makeText(
-                                    context,
-                                    deleteConfirmText,
-                                    Toast.LENGTH_SHORT,
-                                ).show()
-                            onTaskDeleted(taskId)
-                        }
+                        viewModel.confirmDelete(
+                            onTaskDeleted = { taskId ->
+                                Toast.makeText(context, deleteConfirmText, Toast.LENGTH_SHORT).show()
+                            },
+                            onBack = {
+                                onNavigateBack()
+                                onNavigateBack()
+                            },
+                        )
                     },
                 ) {
                     Text(stringResource(R.string.edit_task_delete_confirm))

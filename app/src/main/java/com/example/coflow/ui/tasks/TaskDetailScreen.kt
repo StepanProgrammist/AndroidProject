@@ -22,6 +22,7 @@ import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.CircularProgressIndicator
+import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
@@ -47,6 +48,7 @@ import com.example.coflow.ui.components.CoFlowIcon
 import com.example.coflow.ui.components.CoFlowPrimaryButton
 import com.example.coflow.ui.components.CoFlowScreenHeader
 import com.example.coflow.ui.theme.CoFlowColors
+import com.example.coflow.ui.theme.CoFlowGlassStyles
 import com.example.coflow.ui.theme.CoFlowSpacing
 import com.example.coflow.ui.theme.CoFlowTheme
 import com.example.coflow.ui.theme.coFlowTasksBackgroundBrush
@@ -100,11 +102,17 @@ fun TaskDetailScreen(
             )
 
             // Основной контент
+            // Основной контент (скроллируется под кнопкой)
+            val contentModifier =
+                Modifier
+                    .weight(1f)
+                    .verticalScroll(rememberScrollState())
+                    .then(
+                        if (state.showBottomAction) Modifier.padding(bottom = 80.dp) else Modifier,
+                    )
+
             Column(
-                modifier =
-                    Modifier
-                        .weight(1f)
-                        .verticalScroll(rememberScrollState()),
+                modifier = contentModifier,
                 verticalArrangement = Arrangement.spacedBy(16.dp),
             ) {
                 CoFlowGlassCard(modifier = Modifier.fillMaxWidth()) {
@@ -158,57 +166,6 @@ fun TaskDetailScreen(
                             )
                         }
 
-                        // Исполнители
-                        Column {
-                            Text(
-                                stringResource(R.string.assignees_header),
-                                fontSize = 13.sp,
-                                fontWeight = FontWeight.SemiBold,
-                                color = CoFlowColors.TextPrimary,
-                            )
-                            Spacer(Modifier.height(8.dp))
-                            Row(
-                                modifier = Modifier.fillMaxWidth(),
-                                verticalAlignment = Alignment.CenterVertically,
-                            ) {
-                                CoFlowIcon(name = "person", modifier = Modifier.size(24.dp), color = CoFlowColors.TextSecondary)
-                                Spacer(Modifier.width(12.dp))
-
-                                val assigneeText =
-                                    when {
-                                        state.assignees.isEmpty() -> {
-                                            stringResource(com.example.coflow.R.string.assignees_placeholder)
-                                        }
-
-                                        state.assignees.size == 1 -> {
-                                            val assignee = state.assignees.first()
-                                            if (assignee.isCurrentUser) {
-                                                stringResource(R.string.assignee_you)
-                                            } else {
-                                                assignee.name
-                                            }
-                                        }
-
-                                        else -> {
-                                            val assignees_count = state.assignees.size - 1
-                                            pluralStringResource(
-                                                id = com.example.coflow.R.plurals.task_selected_assignees_count,
-                                                count = assignees_count,
-                                                assignees_count,
-                                            )
-                                        }
-                                    }
-
-                                Text(
-                                    text = assigneeText,
-                                    fontSize = 13.sp,
-                                    color = CoFlowColors.TextPrimary,
-                                    modifier = Modifier.weight(1f),
-                                )
-                                CoFlowIcon(name = "chevron", modifier = Modifier.size(16.dp), color = CoFlowColors.Blue)
-                            }
-                        }
-
                         // Дата
                         Column {
                             Text(
@@ -232,13 +189,52 @@ fun TaskDetailScreen(
                                 )
                             }
                         }
+
+                        // Исполнители
+                        Column {
+                            Text(
+                                stringResource(R.string.assignees_header),
+                                fontSize = 13.sp,
+                                fontWeight = FontWeight.SemiBold,
+                                color = CoFlowColors.TextPrimary,
+                            )
+                            Spacer(Modifier.height(8.dp))
+                            if (state.assignees.isEmpty()) {
+                                Text(
+                                    text = stringResource(R.string.assignees_placeholder),
+                                    color = CoFlowColors.TextSecondary,
+                                    fontSize = 13.sp,
+                                )
+                            } else {
+                                state.assignees.forEachIndexed { index, assignee ->
+                                    AssigneeRow(
+                                        assignee = assignee,
+                                    )
+                                    if (index < state.assignees.lastIndex) {
+                                        Spacer(modifier = Modifier.height(8.dp))
+                                        HorizontalDivider(
+                                            color = CoFlowGlassStyles.BlueBorder,
+                                            thickness = 1.dp,
+                                        )
+                                        Spacer(modifier = Modifier.height(8.dp))
+                                    }
+                                }
+                            }
+                        }
                     }
                 }
-                Spacer(Modifier.height(16.dp))
             }
-
-            // Нижняя кнопка
-            if (state.showBottomAction) {
+        }
+        // Нижняя кнопка — зафиксирована у нижнего края,
+        // перекрывает контент, но контент можно прокрутить над ней
+        if (state.showBottomAction) {
+            Box(
+                modifier =
+                    Modifier
+                        .align(Alignment.BottomCenter)
+                        .padding(horizontal = CoFlowSpacing.ScreenHorizontal)
+                        .padding(bottom = 32.dp),
+            ) {
                 val actionText = state.bottomActionTextResId?.let { stringResource(it) } ?: ""
                 CoFlowPrimaryButton(
                     text = actionText,
@@ -246,6 +242,43 @@ fun TaskDetailScreen(
                     modifier = Modifier.padding(top = 8.dp, bottom = 16.dp),
                 )
             }
+        }
+    }
+}
+
+@Composable
+private fun AssigneeRow(assignee: AssigneeUi) {
+    Row(
+        modifier =
+            Modifier
+                .fillMaxWidth()
+                .padding(vertical = 8.dp, horizontal = 4.dp),
+        verticalAlignment = Alignment.CenterVertically,
+    ) {
+        Box(
+            modifier =
+                Modifier
+                    .size(40.dp)
+                    .clip(CircleShape)
+                    .background(CoFlowColors.Blue.copy(alpha = 0.15f)),
+            contentAlignment = Alignment.Center,
+        ) {
+            Text(
+                text = assignee.name.firstOrNull()?.uppercase() ?: "?",
+                color = CoFlowColors.Blue,
+                fontWeight = FontWeight.Bold,
+                fontSize = 14.sp,
+            )
+        }
+        Spacer(Modifier.width(12.dp))
+
+        Column(modifier = Modifier.weight(1f)) {
+            Text(
+                text = "${assignee.name}${if (assignee.isCurrentUser) " (${stringResource(R.string.assignee_you)})" else ""}",
+                fontWeight = FontWeight.Medium,
+                color = CoFlowColors.TextPrimary,
+                fontSize = 14.sp,
+            )
         }
     }
 }
