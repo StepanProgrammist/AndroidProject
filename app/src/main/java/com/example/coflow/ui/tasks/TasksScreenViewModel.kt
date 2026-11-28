@@ -70,6 +70,7 @@ data class TasksUiState(
     val availableFilters: List<TaskFilterItem>,
     val isBottomBarVisible: Boolean,
     val isLoading: Boolean = false,
+    val isRefreshing: Boolean = false,
     val errorMessage: String? = null,
     val errorMessageResId: Int? = null,
     val allTaskRows: List<TaskRowUi> = emptyList(),
@@ -107,19 +108,28 @@ class TasksScreenViewModel(
         loadTasks()
     }
 
-    private fun loadTasks() {
+    private fun loadTasks(showFullScreenLoading: Boolean = true) {
         // Отменяем предыдущую подписку, если она была
         observeJob?.cancel()
 
         observeJob =
             viewModelScope.launch {
-                _uiState.update { it.copy(isLoading = true, errorMessage = null) }
+                _uiState.update {
+                    it.copy(
+                        // При свайпе-обновлении список остаётся на экране,
+                        // поэтому полноэкранный лоадер не включаем.
+                        isLoading = showFullScreenLoading,
+                        isRefreshing = !showFullScreenLoading,
+                        errorMessage = null,
+                    )
+                }
                 try {
                     val uid = authRepository.getCurrentUserUid()
                     if (uid == null) {
                         _uiState.update {
                             it.copy(
                                 isLoading = false,
+                                isRefreshing = false,
                                 errorMessageResId = R.string.error_not_authorized,
                             )
                         }
@@ -144,6 +154,7 @@ class TasksScreenViewModel(
                         _uiState.update {
                             it.copy(
                                 isLoading = false,
+                                isRefreshing = false,
                                 errorMessage = error?.message,
                                 errorMessageResId =
                                     if (error?.message == null) {
@@ -174,6 +185,7 @@ class TasksScreenViewModel(
                         _uiState.update {
                             it.copy(
                                 isLoading = false,
+                                isRefreshing = false,
                                 allTaskRows = emptyList(),
                                 availableFilters =
                                     listOf(
@@ -216,6 +228,7 @@ class TasksScreenViewModel(
                         _uiState.update { state ->
                             state.copy(
                                 isLoading = false,
+                                isRefreshing = false,
                                 allTaskRows = taskRows,
                                 availableFilters =
                                     listOf(
@@ -235,6 +248,7 @@ class TasksScreenViewModel(
                     _uiState.update {
                         it.copy(
                             isLoading = false,
+                            isRefreshing = false,
                             errorMessage = e.message,
                             errorMessageResId = R.string.error_system,
                         )
@@ -383,10 +397,15 @@ class TasksScreenViewModel(
                 filtered = filtered.filter { it.projectId in selectedProjectIds }
             }
 
+            // Сохраняем, какие группы пользователь раскрыл: ни приход новых данных,
+            // ни свайп-обновление не должны сворачивать список.
+            val expandedById = state.groups.associate { it.id to it.isExpanded }
             val newGroups =
                 when (state.currentGrouping) {
                     TaskGrouping.STATUS -> groupTasksByStatus(filtered)
                     TaskGrouping.DEADLINE -> groupTasksByDeadline(filtered)
+                }.map { group ->
+                    expandedById[group.id]?.let { group.copy(isExpanded = it) } ?: group
                 }
 
             state.copy(
@@ -397,8 +416,9 @@ class TasksScreenViewModel(
         }
     }
 
+    /** Свайп вниз по списку: перечитываем данные, не пряча уже загруженный список. */
     fun refresh() {
-        loadTasks()
+        loadTasks(showFullScreenLoading = false)
     }
 
     private fun groupTasksByStatus(tasks: List<TaskRowUi>): List<TaskGroupUi> {
