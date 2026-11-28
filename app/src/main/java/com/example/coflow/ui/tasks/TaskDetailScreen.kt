@@ -102,11 +102,17 @@ fun TaskDetailScreen(
             )
 
             // Основной контент
+            // Основной контент (скроллируется под кнопкой)
+            val contentModifier =
+                Modifier
+                    .weight(1f)
+                    .verticalScroll(rememberScrollState())
+                    .then(
+                        if (state.showBottomAction) Modifier.padding(bottom = 80.dp) else Modifier,
+                    )
+
             Column(
-                modifier =
-                    Modifier
-                        .weight(1f)
-                        .verticalScroll(rememberScrollState()),
+                modifier = contentModifier,
                 verticalArrangement = Arrangement.spacedBy(16.dp),
             ) {
                 CoFlowGlassCard(modifier = Modifier.fillMaxWidth()) {
@@ -217,16 +223,24 @@ fun TaskDetailScreen(
                         }
                     }
                 }
-
-                // Нижняя кнопка
-                if (state.showBottomAction) {
-                    val actionText = state.bottomActionTextResId?.let { stringResource(it) } ?: ""
-                    CoFlowPrimaryButton(
-                        text = actionText,
-                        onClick = onBottomActionClick,
-                        modifier = Modifier.padding(top = 8.dp, bottom = 16.dp),
-                    )
-                }
+            }
+        }
+        // Нижняя кнопка — зафиксирована у нижнего края,
+        // перекрывает контент, но контент можно прокрутить над ней
+        if (state.showBottomAction) {
+            Box(
+                modifier =
+                    Modifier
+                        .align(Alignment.BottomCenter)
+                        .padding(horizontal = CoFlowSpacing.ScreenHorizontal)
+                        .padding(bottom = 32.dp),
+            ) {
+                val actionText = state.bottomActionTextResId?.let { stringResource(it) } ?: ""
+                CoFlowPrimaryButton(
+                    text = actionText,
+                    onClick = onBottomActionClick,
+                    modifier = Modifier.padding(top = 8.dp, bottom = 16.dp),
+                )
             }
         }
     }
